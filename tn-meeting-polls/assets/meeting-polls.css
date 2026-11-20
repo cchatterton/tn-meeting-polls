@@ -1,0 +1,77 @@
+.tnmp-wrap, .tnmp-vote-shell {
+  --tnmp-ink: #0a263b;
+  --tnmp-muted: #5c6d79;
+  --tnmp-orange: #ff6b00;
+  --tnmp-navy: #002840;
+  --tnmp-navy-light: #063b5d;
+  --tnmp-surface: #ffffff;
+  --tnmp-surface-soft: #f2f6f8;
+  --tnmp-border: #d5dfe5;
+  box-sizing: border-box;
+  color: var(--tnmp-ink);
+}
+.tnmp-wrap { max-width: 70rem; }
+.tnmp-hero {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  margin: 0.75rem 0 1.5rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(125deg, #001d31, #063b5d);
+  color: #ffffff;
+}
+.tnmp-hero h2 { color: inherit; margin: 0.2rem 0 0.35rem; font-size: 1.55rem; }
+.tnmp-hero p { margin: 0; max-width: 42rem; }
+.tnmp-hero .tnmp-hero-eyebrow { color: #ffb77f; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; }
+.tnmp-version { flex: none; align-self: flex-start; font-size: 0.8rem; opacity: 0.85; }
+.tnmp-vote-header { position: relative; padding-right: 4rem; }
+.tnmp-vote-header .tnmp-version { position: absolute; top: 0; right: 0; }
+.tnmp-wrap, .tnmp-vote-shell { box-sizing: border-box; max-width: 70rem; color: #0a263b; }
+.tnmp-wrap *, .tnmp-vote-shell * { box-sizing: border-box; }
+.tnmp-wrap h2 { margin: 1.875rem 0 0.75rem; }
+.tnmp-card { background: #fff; border: 0.0625rem solid #d5dfe5; border-radius: 0.5rem; padding: 1.375rem; margin: 0 0 1.375rem; box-shadow: 0 0.0625rem 0.1875rem rgba(20,35,50,.05); }
+.tnmp-card h3 { margin-top: 0.75rem; }
+.tnmp-card > label { display: block; max-width: 45rem; margin: 0 0 0.9375rem; font-weight: 600; }
+.tnmp-card > label input, .tnmp-card > label textarea, .tnmp-card > label select { display: block; width: 100%; margin-top: 0.3125rem; font-weight: 400; }
+.tnmp-row { display: flex; align-items: flex-end; gap: 0.75rem; margin: 0 0 0.625rem; flex-wrap: wrap; }
+.tnmp-row label { display: block; min-width: 11.25rem; flex: 1; font-weight: 600; }
+.tnmp-row input[type="text"], .tnmp-row input[type="email"], .tnmp-row input[type="datetime-local"] { width: 100%; margin-top: 0.25rem; }
+.tnmp-row .tnmp-check { flex: 0 0 11.25rem; align-self: center; font-weight: 400; }
+.tnmp-submit { margin: 1.375rem 0 0; }
+.tnmp-notice { border-left: 0.25rem solid #ff6b00; background: #f2f6f8; padding: 0.75rem 1rem; margin: 0.875rem 0; }
+.tnmp-poll-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.tnmp-poll-head h3 { margin: 0; }
+.tnmp-status { background: #f2f6f8; color: #063b5d; border-radius: 6.25rem; padding: 0.25rem 0.625rem; font-size: 0.8125rem; }
+.tnmp-muted { color: #5c6d79; font-size: 0.8125rem; }
+.tnmp-scroll { overflow-x: auto; }
+.tnmp-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; }
+.tnmp-table th, .tnmp-table td { border-bottom: 0.0625rem solid #e1e8ee; padding: 0.625rem 0.5rem; text-align: left; vertical-align: top; }
+.tnmp-table th { white-space: nowrap; }
+.tnmp-inline { display: inline-block; margin: 0 0.3125rem 0.3125rem 0; }
+.tnmp-closed { color: #9b351f; font-weight: 600; }
+.tnmp-final { color: #176133; font-weight: 600; }
+.tnmp-vote-body { background: #f2f6f8; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.tnmp-vote-shell { max-width: 47.5rem; margin: 0 auto; padding: 1.5rem 1rem 3.75rem; }
+.tnmp-vote-shell h1 { margin: 0.3125rem 0 0.625rem; font-size: clamp(1.625rem, 5vw, 2.25rem); }
+.tnmp-eyebrow { color: #063b5d; font-weight: 700; margin: 0; }
+.tnmp-vote-shell button { cursor: pointer; border: 0.0625rem solid #002840; border-radius: 0.3125rem; padding: 0.625rem 0.9375rem; background: #002840; color: white; font: inherit; }
+.tnmp-code-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 0.625rem; margin-top: 1.125rem; }
+.tnmp-code-form label { font-weight: 600; }
+.tnmp-code-form input { display: block; margin-top: 0.3125rem; padding: 0.5rem; font-size: 1.125rem; width: 9.375rem; }
+.tnmp-vote-slot { border-bottom: 0.0625rem solid #d5dfe5; padding: 1.0625rem 0; }
+.tnmp-vote-slot h3 { margin: 0 0 0.125rem; }
+.tnmp-vote-slot p { margin: 0.1875rem 0 0.75rem; }
+.tnmp-vote-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5625rem; }
+.tnmp-vote-options form, .tnmp-vote-options div { text-align: center; }
+.tnmp-vote-options .tnmp-choice { width: 100%; display: block; border: 0.0625rem solid #b6cad8; border-radius: 0.3125rem; padding: 0.625rem 0.3125rem; color: #063b5d; background: #fff; font-weight: 600; text-decoration: none; }
+.tnmp-vote-options .tnmp-choice.is-selected { color: #fff; background: #002840; border-color: #002840; }
+.tnmp-vote-options small { display: block; color: #5c6d79; margin-top: 0.3125rem; }
+@media (max-width: 37.5rem) { .tnmp-card { padding: 1rem; } .tnmp-row label, .tnmp-row .tnmp-check { flex: 1 1 100%; } .tnmp-vote-options { gap: 0.3125rem; } .tnmp-vote-options .tnmp-choice { font-size: 0.875rem; } }
+
+.tnmp-wrap .button-primary, .tnmp-vote-shell button:not(.tnmp-choice) { background: var(--tnmp-navy); border-color: var(--tnmp-navy); color: #ffffff; }
+.tnmp-wrap .button-primary:hover, .tnmp-vote-shell button:not(.tnmp-choice):hover { background: var(--tnmp-navy-light); border-color: var(--tnmp-navy-light); }
+.tnmp-wrap :is(button, a, input, textarea, select, summary):focus-visible,
+.tnmp-vote-shell :is(button, a, input, textarea, select, summary):focus-visible { outline: 0.2rem solid var(--tnmp-orange); outline-offset: 0.15rem; }
+.tnmp-vote-shell button:disabled { opacity: 0.6; cursor: wait; }
