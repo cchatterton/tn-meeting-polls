@@ -42,7 +42,7 @@ function tnmp_ics_fold($line) {
 function tnmp_ics($poll, $slot, $attendee, $event, $kind) {
     $method = $kind === 'cancel' ? 'CANCEL' : 'REQUEST';
     $status = $kind === 'cancel' ? 'CANCELLED' : ($kind === 'final' ? 'CONFIRMED' : 'TENTATIVE');
-    $summary = ($kind === 'hold' ? 'Hold: ' : '') . $poll->title;
+    $summary = ($kind === 'final' ? '' : '[Placeholder] ') . $poll->title;
     $organiser = get_userdata((int) $poll->organiser_id);
     $organiser_email = $organiser ? $organiser->user_email : get_option('admin_email');
     $sequence = (int) $event->sequence_no + ((int) $event->sent_once ? 1 : 0);
@@ -74,11 +74,11 @@ function tnmp_mail_calendar($attendee, $poll, $slot, $event, $kind) {
     $ical = tnmp_ics($poll, $slot, $attendee, $event, $kind);
     $when = tnmp_format_time($slot->starts_at, $poll->timezone) . ' (' . $poll->timezone . ')';
     if ($kind === 'cancel') {
-        $subject = 'Cancelled: ' . $poll->title . ' — ' . $when;
+        $subject = 'Cancelled: [Placeholder] ' . $poll->title . ' — ' . $when;
     } elseif ($kind === 'final') {
         $subject = 'Confirmed: ' . $poll->title . ' — ' . $when;
     } else {
-        $subject = 'Placeholder: ' . $poll->title . ' — ' . $when;
+        $subject = '[Placeholder] ' . $poll->title . ' — ' . $when;
     }
     $method = $kind === 'cancel' ? 'CANCEL' : 'REQUEST';
     $smtp2go_result = tnmp_mail_calendar_smtp2go($attendee->email, $subject, $ical, $method);

@@ -31,17 +31,21 @@ $hold = tnmp_ics($poll, $slot, $attendee, $event, 'hold');
 check(strpos($hold, "METHOD:REQUEST\r\n") !== false, 'hold request method');
 check(strpos($hold, "UID:abc@example.com\r\n") !== false, 'event UID');
 check(strpos($hold, "SEQUENCE:0\r\n") !== false, 'initial sequence');
-check(strpos($hold, 'SUMMARY:Hold: Planning\\, review\\; café') !== false, 'escaped summary');
+check(strpos($hold, 'SUMMARY:[Placeholder] Planning\\, review\\; café') !== false, 'placeholder meeting name and escaped summary');
 check(strpos($hold, 'DESCRIPTION:First line\\nSecond line') !== false, 'escaped line break');
 check(strpos($hold, "DTSTART:20261125T090000Z\r\n") !== false, 'UTC start');
 check(strpos($hold, 'ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:person@example.com') !== false, 'calendar invite requests RSVP');
 check(tnmp_mail_calendar($attendee, $poll, $slot, $event, 'hold') === true, 'calendar invite sent');
+check(strpos($GLOBALS['tnmp_sent_mail']['subject'], '[Placeholder] Planning, review; café') === 0, 'placeholder email subject matches meeting name');
 check($GLOBALS['tnmp_sent_mail']['attachments'] === array() && $GLOBALS['tnmp_sent_mail']['content_type'] === 'text/calendar; method=REQUEST' && $GLOBALS['tnmp_sent_mail']['charset'] === 'UTF-8' && strpos($GLOBALS['tnmp_sent_mail']['body'], 'METHOD:REQUEST') !== false, 'meeting request is the primary calendar MIME body without an attachment');
 $event->sent_once = 1;
 $cancel = tnmp_ics($poll, $slot, $attendee, $event, 'cancel');
 check(strpos($cancel, "METHOD:CANCEL\r\n") !== false, 'cancel method');
+check(strpos($cancel, 'SUMMARY:[Placeholder] Planning\\, review\\; café') !== false, 'cancellation retains placeholder meeting name');
 check(strpos($cancel, "SEQUENCE:1\r\n") !== false, 'cancel increments sequence');
 check(tnmp_mail_calendar($attendee, $poll, $slot, $event, 'cancel') === true && $GLOBALS['tnmp_sent_mail']['content_type'] === 'text/calendar; method=CANCEL', 'cancellation is a calendar MIME message');
+$final = tnmp_ics($poll, $slot, $attendee, $event, 'final');
+check(strpos($final, 'SUMMARY:Planning\\, review\\; café') !== false && strpos($final, '[Placeholder]') === false, 'final meeting uses its ordinary name');
 foreach (explode("\r\n", $cancel) as $line) {
     check(strlen($line) <= 75, 'calendar line length');
 }

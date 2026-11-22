@@ -2,6 +2,10 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.11 - 2026-11-22
+
+- Name tentative calendar meetings `[Placeholder] Meeting Name`, including their cancellation updates. Confirmed meetings use the normal name.
+
 ## 0.1.10 - 2026-11-22
 
 - Offer explicit 10-minute start choices so the browser cannot insert its current minute.
