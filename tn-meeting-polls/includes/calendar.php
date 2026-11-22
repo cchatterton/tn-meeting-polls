@@ -298,7 +298,7 @@ function tnmp_run_job($job) {
     if (!isset($expected[$job->job_type]) || $event->state !== $expected[$job->job_type]) {
         return 'skip';
     }
-    if ($job->job_type === 'hold' && ($poll->status !== 'open' || $slot->status !== 'open' || tnmp_vote_choice($attendee->id, $slot->id) === 'no')) {
+    if ($job->job_type === 'hold' && ($poll->status !== 'open' || $slot->status !== 'open' || $attendee->invite_state === 'removed' || tnmp_vote_choice($attendee->id, $slot->id) === 'no')) {
         $wpdb->update(tnmp_table('events'), array('state' => 'none'), array('id' => $event->id));
         return 'skip';
     }

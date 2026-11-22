@@ -3,7 +3,7 @@ Contributors:
 Tags: scheduling, meetings, polls, calendar
 Requires at least: 7.0
 Requires PHP: 7.4
-Stable tag: 0.1.6
+Stable tag: 0.1.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,6 +14,8 @@ Create meeting polls with Prefer, Yes and No voting, email code verification and
 TN Meeting Polls lets logged-in WordPress users suggest meeting times, add attendees and watch responses update. Attendees receive a private link and verify a one-time email code before voting. Each attendee can mark each time Prefer, Yes or No.
 
 The organiser can opt individual attendees into tentative calendar placeholders, close a proposed time for everyone, choose a final time, or cancel the poll. An attendee's No vote cancels only that attendee's placeholder for the selected time. Finalising sends the chosen invitation to everyone who has not voted No for it and cancels other placeholders.
+
+Open polls can be edited from their poll card. Editing opens the Create a poll tab with the current details prefilled. Organisers can add or remove proposed times and invitees, then save. Votes and calendar identities for unchanged times and retained invitees are kept. Removed placeholders receive cancellations; new options and invitees receive invitations. Removed invitees lose access to their poll voting link. Existing polls with mixed durations show a warning before a single duration is applied to all times.
 
 == Installation ==
 

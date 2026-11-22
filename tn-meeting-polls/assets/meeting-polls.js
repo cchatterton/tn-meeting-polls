@@ -14,10 +14,17 @@
       input.value = '';
       input.checked = false;
       input.required = false;
-      if (input.type === 'checkbox') input.name = 'holds[' + container.children.length + ']';
     });
     container.appendChild(row);
+    syncAttendeeRows(container);
     return row;
+  }
+
+  function syncAttendeeRows(container) {
+    Array.from(container.querySelectorAll('.tnmp-attendee-row')).forEach(function (row, index) {
+      row.querySelector('input[type="checkbox"]').name = 'holds[' + index + ']';
+      row.querySelector('input[type="email"]').required = index === 0;
+    });
   }
 
   document.querySelectorAll('.tnmp-add').forEach(function (button) {
@@ -30,6 +37,15 @@
   var contactSearch = document.getElementById('tnmp-contact-search');
   var contactMatches = document.getElementById('tnmp-contact-matches');
   var attendeeRows = document.getElementById('tnmp-attendees');
+  if (attendeeRows) {
+    attendeeRows.addEventListener('click', function (event) {
+      if (!event.target.closest('.tnmp-remove-attendee')) return;
+      var row = event.target.closest('.tnmp-attendee-row');
+      if (attendeeRows.children.length > 1) row.remove();
+      else row.querySelectorAll('input').forEach(function (input) { input.value = ''; input.checked = false; });
+      syncAttendeeRows(attendeeRows);
+    });
+  }
   if (contactSearch && contactMatches && attendeeRows) {
     var matches = Array.from(contactMatches.querySelectorAll('.tnmp-contact-match'));
     var filterContacts = function () {
@@ -67,6 +83,7 @@
   if (dates) {
     var duration = document.querySelector('input[name="duration"]');
     var updateTimeBounds = function () {
+      if (dates.dataset.editing === '1') return;
       var earliest = Number(dates.dataset.earliest) * 60;
       var latest = Number(dates.dataset.latest) * 60 - Number(duration.value || 0);
       var minimum = String(Math.floor(earliest / 60)).padStart(2, '0') + ':' + String(earliest % 60).padStart(2, '0');
@@ -83,18 +100,44 @@
       if (addDate) addDate.disabled = full;
     };
     dates.addEventListener('click', function (event) {
+      var removeTime = event.target.closest('.tnmp-remove-time');
+      if (removeTime) {
+        var timeRow = removeTime.closest('.tnmp-time-row');
+        var timeGroup = timeRow.closest('.tnmp-date-group');
+        if (timeGroup.querySelectorAll('.tnmp-time-row').length > 1) timeRow.remove();
+        else if (dates.children.length > 1) timeGroup.remove();
+        else timeRow.querySelector('input[type="time"]').value = '';
+        updateSlotButtons();
+        return;
+      }
+      var removeDate = event.target.closest('.tnmp-remove-date');
+      if (removeDate) {
+        var dateGroup = removeDate.closest('.tnmp-date-group');
+        if (dates.children.length > 1) dateGroup.remove();
+        else {
+          dateGroup.querySelector('input[type="date"]').value = '';
+          dateGroup.querySelectorAll('.tnmp-time-row').forEach(function (row, index) {
+            if (index > 0) row.remove();
+            else row.querySelector('input[type="time"]').value = '';
+          });
+        }
+        updateSlotButtons();
+        return;
+      }
       var button = event.target.closest('.tnmp-add-time');
       if (!button || dates.querySelectorAll('.tnmp-time-row').length >= 10) return;
       var group = button.closest('.tnmp-date-group');
       var row = group.querySelector('.tnmp-time-row').cloneNode(true);
       row.querySelector('input[type="time"]').value = '';
+      var closed = row.querySelector('.tnmp-closed');
+      if (closed) closed.remove();
       group.querySelector('.tnmp-times').appendChild(row);
       updateTimeBounds();
       updateSlotButtons();
     });
     document.getElementById('tnmp-add-date').addEventListener('click', function () {
       if (dates.querySelectorAll('.tnmp-time-row').length >= 10) return;
-      var index = dates.children.length;
+      var index = Math.max.apply(null, Array.from(dates.children).map(function (group) { return Number(group.dataset.dateIndex); })) + 1;
       var group = dates.firstElementChild.cloneNode(true);
       group.dataset.dateIndex = String(index);
       group.querySelector('input[type="date"]').value = '';
@@ -105,6 +148,8 @@
         input.name = input.name.replace(/\[\d+\]/, '[' + index + ']');
       });
       group.querySelector('input[type="time"]').value = '';
+      var closed = group.querySelector('.tnmp-closed');
+      if (closed) closed.remove();
       dates.appendChild(group);
       updateTimeBounds();
       updateSlotButtons();

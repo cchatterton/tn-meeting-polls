@@ -2,6 +2,13 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.7 - 2026-11-22
+
+- Edit open polls from the first tab with current dates, times and invitees prefilled.
+- Add or remove proposed times and invitees while keeping votes and calendar identities for unchanged options.
+- Queue cancellations for removed placeholders and invitations for new times and people.
+- Revoke voting links for removed invitees and preserve unchanged legacy times when editing.
+
 ## 0.1.6 - 2026-11-22
 
 - Add per-organiser meeting duration and earliest/latest hour settings.

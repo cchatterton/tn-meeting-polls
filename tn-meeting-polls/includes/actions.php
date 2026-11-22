@@ -9,7 +9,7 @@ function tnmp_return_url() {
 }
 
 function tnmp_redirect($code, $poll_id = 0) {
-    $view = in_array($code, array('finalized', 'cancelled'), true) ? 'history' : ($code === 'created' ? 'open' : '');
+    $view = in_array($code, array('finalized', 'cancelled'), true) ? 'history' : (in_array($code, array('created', 'edited'), true) ? 'open' : '');
     if (strpos($code, 'settings_') === 0) { $view = 'settings'; }
     if (strpos($code, 'contact_') === 0) { $view = 'contacts'; }
     $url = add_query_arg(array('tnmp_notice' => $code, 'tnmp_poll' => (int) $poll_id), tnmp_return_url());
@@ -34,7 +34,7 @@ function tnmp_valid_timezone($timezone) {
     return is_string($timezone) && (in_array($timezone, timezone_identifiers_list(DateTimeZone::ALL_WITH_BC), true) || (bool) preg_match('/^[+-](?:0\d|1[0-4]):[0-5]\d$/D', $timezone));
 }
 
-function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, $hours = null) {
+function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, $hours = null, $existing_slots = array()) {
     if (!is_array($dates) || !is_array($times) || !$dates || count($dates) > 10 || count($dates) !== count($times) || array_diff_key($dates, $times) || !is_scalar($duration) || !preg_match('/^\d+$/D', (string) $duration)) {
         return false;
     }
@@ -42,20 +42,27 @@ function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, $hours 
     if ($minutes < 5 || $minutes > 1440 || $minutes % 5 !== 0) { return false; }
     $slots = array();
     $seen = array();
+    $existing = array();
+    foreach ($existing_slots as $slot) {
+        $existing[$slot->starts_at . '|' . $slot->ends_at] = true;
+    }
     foreach ($dates as $index => $date) {
         if (!is_string($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date) || !is_array($times[$index]) || !$times[$index]) {
             return false;
         }
         foreach ($times[$index] as $time) {
-            if (!is_string($time) || !preg_match('/^([01]\d|2[0-3]):[0-5]0$/D', $time)) {
+            if (!is_string($time) || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D', $time)) {
                 return false;
             }
             if (count($slots) >= 10) { return false; }
             $start = tnmp_parse_local_datetime($date . 'T' . $time, $timezone);
-            if (!$start || $start->getTimestamp() < time() + 300 || isset($seen[$start->format('Y-m-d H:i:s')])) { return false; }
+            if (!$start || isset($seen[$start->format('Y-m-d H:i:s')])) { return false; }
             $seen[$start->format('Y-m-d H:i:s')] = true;
             $end = $start->modify('+' . $minutes . ' minutes');
-            if (is_array($hours)) {
+            $unchanged = isset($existing[$start->format('Y-m-d H:i:s') . '|' . $end->format('Y-m-d H:i:s')]);
+            if (!$unchanged && ((int) substr($time, 3, 2)) % 10 !== 0) { return false; }
+            if (!$unchanged && $start->getTimestamp() < time() + 300) { return false; }
+            if (!$unchanged && is_array($hours)) {
                 $local_start = $start->setTimezone(new DateTimeZone($timezone));
                 $local_end = $end->setTimezone(new DateTimeZone($timezone));
                 $earliest = sprintf('%02d:00', $hours['earliest']);
@@ -71,6 +78,24 @@ function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, $hours 
         }
     }
     return $slots;
+}
+
+function tnmp_submitted_attendees() {
+    $emails = isset($_POST['emails']) && is_array($_POST['emails']) ? array_values(wp_unslash($_POST['emails'])) : array();
+    $names = isset($_POST['names']) && is_array($_POST['names']) ? array_values(wp_unslash($_POST['names'])) : array();
+    $holds = isset($_POST['holds']) && is_array($_POST['holds']) ? wp_unslash($_POST['holds']) : array();
+    if (count($emails) > 50) { return false; }
+    $attendees = array();
+    $seen = array();
+    foreach ($emails as $index => $raw_email) {
+        if (!is_scalar($raw_email)) { return false; }
+        if (trim((string) $raw_email) === '') { continue; }
+        $email = sanitize_email($raw_email);
+        if (!is_email($email) || strlen($email) > 190 || isset($seen[strtolower($email)])) { return false; }
+        $seen[strtolower($email)] = true;
+        $attendees[] = array('email' => $email, 'name' => sanitize_text_field($names[$index] ?? ''), 'holds' => !empty($holds[$index]) ? 1 : 0);
+    }
+    return $attendees ?: false;
 }
 
 function tnmp_save_settings() {
@@ -140,31 +165,13 @@ function tnmp_create() {
     $dates = isset($_POST['dates']) && is_array($_POST['dates']) ? wp_unslash($_POST['dates']) : array();
     $times = isset($_POST['times']) && is_array($_POST['times']) ? wp_unslash($_POST['times']) : array();
     $duration = isset($_POST['duration']) ? wp_unslash($_POST['duration']) : '';
-    $emails = isset($_POST['emails']) && is_array($_POST['emails']) ? array_values(wp_unslash($_POST['emails'])) : array();
-    $names = isset($_POST['names']) && is_array($_POST['names']) ? array_values(wp_unslash($_POST['names'])) : array();
-    $holds = isset($_POST['holds']) && is_array($_POST['holds']) ? wp_unslash($_POST['holds']) : array();
-    if ($title === '' || strlen($title) > 190 || count($emails) > 50) {
+    if ($title === '' || strlen($title) > 190) {
         tnmp_redirect('invalid');
     }
     $slots = tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, tnmp_user_settings(get_current_user_id()));
     if ($slots === false) { tnmp_redirect('invalid_time'); }
-    $attendees = array();
-    $seen = array();
-    foreach ($emails as $i => $raw_email) {
-        if (trim((string) $raw_email) === '') {
-            continue;
-        }
-        $email = sanitize_email($raw_email);
-        if (!is_email($email) || strlen($email) > 190 || isset($seen[strtolower($email)])) {
-            tnmp_redirect('invalid_attendee');
-        }
-        $seen[strtolower($email)] = true;
-        $attendees[] = array(
-            'email' => $email,
-            'name' => sanitize_text_field($names[$i] ?? ''),
-            'holds' => !empty($holds[$i]) ? 1 : 0,
-        );
-    }
+    $attendees = tnmp_submitted_attendees();
+    if ($attendees === false) { tnmp_redirect('invalid_attendee'); }
     if (!$slots || !$attendees) {
         tnmp_redirect('invalid');
     }
@@ -225,6 +232,161 @@ function tnmp_create() {
     tnmp_redirect('created', $poll_id);
 }
 
+function tnmp_edit() {
+    if (!is_user_logged_in() || !current_user_can('read')) {
+        wp_die('You must be logged in to edit a meeting poll.', '', array('response' => 403));
+    }
+    check_admin_referer('tnmp_edit');
+    global $wpdb;
+    $poll_id = absint($_POST['poll_id'] ?? 0);
+    $poll = tnmp_get_poll($poll_id);
+    if (!$poll || (int) $poll->organiser_id !== get_current_user_id() || $poll->status !== 'open') {
+        wp_die('You cannot edit this poll.', '', array('response' => 403));
+    }
+    $title = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
+    $description = sanitize_textarea_field(wp_unslash($_POST['description'] ?? ''));
+    $timezone = sanitize_text_field(wp_unslash($_POST['timezone'] ?? ''));
+    if ($title === '' || strlen($title) > 190 || !tnmp_valid_timezone($timezone)) { tnmp_redirect('invalid', $poll_id); }
+    $dates = isset($_POST['dates']) && is_array($_POST['dates']) ? wp_unslash($_POST['dates']) : array();
+    $times = isset($_POST['times']) && is_array($_POST['times']) ? wp_unslash($_POST['times']) : array();
+    $duration = isset($_POST['duration']) ? wp_unslash($_POST['duration']) : '';
+    $old_slots = tnmp_get_slots($poll_id);
+    $old_attendees = tnmp_get_attendees($poll_id);
+    $slots = tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, tnmp_user_settings(get_current_user_id()), $old_slots);
+    if ($slots === false) { tnmp_redirect('invalid_time', $poll_id); }
+    $people = tnmp_submitted_attendees();
+    if ($people === false) { tnmp_redirect('invalid_attendee', $poll_id); }
+
+    $old_slot_keys = array();
+    $new_slot_keys = array();
+    foreach ($old_slots as $slot) { $old_slot_keys[$slot->starts_at . '|' . $slot->ends_at] = $slot; }
+    foreach ($slots as $slot) { $new_slot_keys[$slot[0] . '|' . $slot[1]] = $slot; }
+    $old_people = array();
+    $new_people = array();
+    foreach ($old_attendees as $attendee) { $old_people[strtolower($attendee->email)] = $attendee; }
+    foreach ($people as $person) { $new_people[strtolower($person['email'])] = $person; }
+    $removed_slots = array();
+    $added_slot_ids = array();
+    $removed_people = array();
+    $added_person_ids = array();
+    $holds_off = array();
+    $holds_on = array();
+    $metadata_changed = $title !== $poll->title || $description !== $poll->description || $timezone !== $poll->timezone;
+    $old_slot_names = array_keys($old_slot_keys);
+    $new_slot_names = array_keys($new_slot_keys);
+    sort($old_slot_names);
+    sort($new_slot_names);
+    $options_changed = $old_slot_names !== $new_slot_names;
+
+    $wpdb->query('START TRANSACTION');
+    $locked = $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . tnmp_table('polls') . ' WHERE id = %d FOR UPDATE', $poll_id));
+    if (!$locked || $locked->status !== 'open' || (int) $locked->organiser_id !== get_current_user_id()) {
+        $wpdb->query('ROLLBACK');
+        tnmp_redirect('already_closed', $poll_id);
+    }
+    $ok = $wpdb->update(tnmp_table('polls'), array('title' => $title, 'description' => $description, 'timezone' => $timezone), array('id' => $poll_id)) !== false;
+    foreach ($old_slots as $slot) {
+        if (!isset($new_slot_keys[$slot->starts_at . '|' . $slot->ends_at])) {
+            $ok = $ok && $wpdb->update(tnmp_table('slots'), array('status' => 'removed'), array('id' => $slot->id)) !== false;
+            $removed_slots[] = $slot;
+        }
+    }
+    foreach ($slots as $slot) {
+        if (!isset($old_slot_keys[$slot[0] . '|' . $slot[1]])) {
+            $inserted = $wpdb->insert(tnmp_table('slots'), array('poll_id' => $poll_id, 'starts_at' => $slot[0], 'ends_at' => $slot[1], 'status' => 'open'));
+            if (!$inserted) { $ok = false; break; }
+            $added_slot_ids[] = (int) $wpdb->insert_id;
+        }
+    }
+    foreach ($old_attendees as $attendee) {
+        $key = strtolower($attendee->email);
+        if (!isset($new_people[$key])) {
+            $ok = $ok && $wpdb->update(tnmp_table('attendees'), array('invite_state' => 'removed', 'otp_hash' => '', 'session_hash' => ''), array('id' => $attendee->id)) !== false;
+            $removed_people[] = $attendee;
+        } else {
+            $person = $new_people[$key];
+            $ok = $ok && $wpdb->update(tnmp_table('attendees'), array('name' => $person['name'], 'holds' => $person['holds']), array('id' => $attendee->id)) !== false;
+            if ($attendee->holds && !$person['holds']) { $holds_off[] = $attendee; }
+            if (!$attendee->holds && $person['holds']) { $holds_on[] = $attendee; }
+        }
+    }
+    $host = parse_url(home_url(), PHP_URL_HOST) ?: 'local';
+    foreach ($people as $person) {
+        if (isset($old_people[strtolower($person['email'])])) { continue; }
+        $nonce = bin2hex(random_bytes(32));
+        $token = tnmp_token_from_nonce($nonce);
+        $inserted = $wpdb->insert(tnmp_table('attendees'), array(
+            'poll_id' => $poll_id, 'name' => $person['name'], 'email' => $person['email'],
+            'holds' => $person['holds'], 'invite_state' => 'queued',
+            'token_nonce' => $nonce, 'token_hash' => hash('sha256', $token),
+        ));
+        if (!$inserted) { $ok = false; break; }
+        $attendee_id = (int) $wpdb->insert_id;
+        $added_person_ids[] = $attendee_id;
+        foreach (tnmp_get_slots($poll_id) as $slot) {
+            $inserted = $wpdb->insert(tnmp_table('events'), array('attendee_id' => $attendee_id, 'slot_id' => $slot->id, 'uid' => wp_generate_uuid4() . '@' . $host, 'sequence_no' => 0, 'sent_once' => 0, 'state' => 'none'));
+            if (!$inserted) { $ok = false; break 2; }
+        }
+    }
+    foreach ($old_attendees as $attendee) {
+        if (isset($new_people[strtolower($attendee->email)])) {
+            foreach ($added_slot_ids as $slot_id) {
+                $inserted = $wpdb->insert(tnmp_table('events'), array('attendee_id' => $attendee->id, 'slot_id' => $slot_id, 'uid' => wp_generate_uuid4() . '@' . $host, 'sequence_no' => 0, 'sent_once' => 0, 'state' => 'none'));
+                if (!$inserted) { $ok = false; break 2; }
+            }
+        }
+    }
+    if (!$ok) {
+        $wpdb->query('ROLLBACK');
+        tnmp_redirect('database', $poll_id);
+    }
+    $wpdb->query('COMMIT');
+
+    foreach ($removed_slots as $slot) {
+        foreach ($old_attendees as $attendee) { tnmp_queue_event($attendee, $slot, 'cancel'); }
+    }
+    foreach (array_merge($removed_people, $holds_off) as $attendee) {
+        foreach ($old_slots as $slot) { tnmp_queue_event($attendee, $slot, 'cancel'); }
+    }
+    $current_slots = tnmp_get_slots($poll_id);
+    foreach ($added_person_ids as $attendee_id) { tnmp_queue('invite', $poll_id, $attendee_id); }
+    foreach ($old_attendees as $old_attendee) {
+        if (!isset($new_people[strtolower($old_attendee->email)])) { continue; }
+        $attendee = tnmp_get_attendee($old_attendee->id);
+        if ($options_changed || $metadata_changed) {
+            $wpdb->update(tnmp_table('attendees'), array('invite_state' => 'queued'), array('id' => $attendee->id));
+            tnmp_queue('invite', $poll_id, $attendee->id);
+        }
+        if (!$attendee->holds) { continue; }
+        foreach ($current_slots as $slot) {
+            if ($slot->status !== 'open' || tnmp_vote_choice($attendee->id, $slot->id) === 'no') { continue; }
+            if (in_array((int) $slot->id, $added_slot_ids, true) || in_array($old_attendee, $holds_on, true)) {
+                tnmp_queue_event($attendee, $slot, 'hold');
+            } elseif ($metadata_changed) {
+                tnmp_queue_hold_update($attendee, $slot);
+            }
+        }
+    }
+    foreach ($added_person_ids as $attendee_id) {
+        $attendee = tnmp_get_attendee($attendee_id);
+        if (!$attendee->holds) { continue; }
+        foreach ($current_slots as $slot) {
+            if ($slot->status === 'open') { tnmp_queue_event($attendee, $slot, 'hold'); }
+        }
+    }
+    tnmp_process_queue(3);
+    tnmp_redirect('edited', $poll_id);
+}
+
+function tnmp_queue_hold_update($attendee, $slot) {
+    global $wpdb;
+    $event = tnmp_get_event($attendee->id, $slot->id);
+    if ($event && $event->state === 'held') {
+        $wpdb->update(tnmp_table('events'), array('state' => 'queued_hold'), array('id' => $event->id));
+        tnmp_queue('hold', $attendee->poll_id, $attendee->id, $slot->id);
+    }
+}
+
 function tnmp_manage() {
     if (!is_user_logged_in() || !current_user_can('read')) {
         wp_die('You must be logged in.', '', array('response' => 403));
@@ -248,7 +410,7 @@ function tnmp_manage() {
     }
     if ($action === 'resend') {
         $attendee = tnmp_get_attendee(absint($_POST['attendee_id'] ?? 0));
-        if (!$attendee || (int) $attendee->poll_id !== $poll_id || $attendee->invite_state === 'queued') {
+        if (!$attendee || (int) $attendee->poll_id !== $poll_id || in_array($attendee->invite_state, array('queued', 'removed'), true)) {
             tnmp_redirect('invalid', $poll_id);
         }
         $nonce = bin2hex(random_bytes(32));
@@ -306,7 +468,7 @@ function tnmp_attendee_by_token($token) {
         return null;
     }
     global $wpdb;
-    return $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . tnmp_table('attendees') . ' WHERE token_hash = %s', hash('sha256', $token)));
+    return $wpdb->get_row($wpdb->prepare("SELECT * FROM " . tnmp_table('attendees') . " WHERE token_hash = %s AND invite_state <> 'removed'", hash('sha256', $token)));
 }
 
 function tnmp_has_session($attendee) {
@@ -411,7 +573,7 @@ function tnmp_save_vote($attendee) {
     $choice = sanitize_key(wp_unslash($_POST['choice'] ?? ''));
     $slot = tnmp_get_slot($slot_id);
     $poll = tnmp_get_poll($attendee->poll_id);
-    if (!$slot || !$poll || (int) $slot->poll_id !== (int) $poll->id || $slot->status !== 'open' || $poll->status !== 'open' || !in_array($choice, array('prefer', 'yes', 'no'), true)) {
+    if (!$slot || !$poll || $attendee->invite_state === 'removed' || (int) $slot->poll_id !== (int) $poll->id || $slot->status !== 'open' || $poll->status !== 'open' || !in_array($choice, array('prefer', 'yes', 'no'), true)) {
         return 'This time is no longer open for voting.';
     }
     $ok = $wpdb->replace(tnmp_table('votes'), array(

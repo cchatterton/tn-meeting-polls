@@ -159,17 +159,17 @@ function tnmp_get_event($attendee_id, $slot_id) {
 
 function tnmp_get_slots($poll_id) {
     global $wpdb;
-    return $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . tnmp_table('slots') . ' WHERE poll_id = %d ORDER BY starts_at, id', $poll_id));
+    return $wpdb->get_results($wpdb->prepare("SELECT * FROM " . tnmp_table('slots') . " WHERE poll_id = %d AND status <> 'removed' ORDER BY starts_at, id", $poll_id));
 }
 
 function tnmp_get_attendees($poll_id) {
     global $wpdb;
-    return $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . tnmp_table('attendees') . ' WHERE poll_id = %d ORDER BY id', $poll_id));
+    return $wpdb->get_results($wpdb->prepare("SELECT * FROM " . tnmp_table('attendees') . " WHERE poll_id = %d AND invite_state <> 'removed' ORDER BY id", $poll_id));
 }
 
 function tnmp_get_votes($poll_id) {
     global $wpdb;
-    return $wpdb->get_results($wpdb->prepare('SELECT v.* FROM ' . tnmp_table('votes') . ' v INNER JOIN ' . tnmp_table('slots') . ' s ON s.id = v.slot_id WHERE s.poll_id = %d', $poll_id));
+    return $wpdb->get_results($wpdb->prepare("SELECT v.* FROM " . tnmp_table('votes') . " v INNER JOIN " . tnmp_table('slots') . " s ON s.id = v.slot_id INNER JOIN " . tnmp_table('attendees') . " a ON a.id = v.attendee_id WHERE s.poll_id = %d AND s.status <> 'removed' AND a.invite_state <> 'removed'", $poll_id));
 }
 
 function tnmp_queue($type, $poll_id, $attendee_id, $slot_id = 0) {

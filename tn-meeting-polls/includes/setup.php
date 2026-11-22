@@ -10,6 +10,7 @@ add_action('template_redirect', 'tnmp_vote_page');
 add_action('admin_menu', 'tnmp_admin_menu');
 add_shortcode('tn_meeting_polls', 'tnmp_shortcode');
 add_action('admin_post_tnmp_create', 'tnmp_create');
+add_action('admin_post_tnmp_edit', 'tnmp_edit');
 add_action('admin_post_tnmp_manage', 'tnmp_manage');
 add_action('admin_post_tnmp_save_settings', 'tnmp_save_settings');
 add_action('admin_post_tnmp_contact', 'tnmp_contact_action');

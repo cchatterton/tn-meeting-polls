@@ -1,10 +1,11 @@
 <?php
 // Run with php tests/views-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.6');
+define('TNMP_VERSION', '0.1.7');
 function current_user_can($capability) { return true; }
 function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower($value)); }
 function wp_unslash($value) { return $value; }
+function absint($value) { return abs((int) $value); }
 function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function esc_html($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function esc_url($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
@@ -23,11 +24,14 @@ class FakeDb {
     public function prepare($query, $user_id) { return str_replace('%d', (string) $user_id, $query); }
     public function get_results($query) {
         $this->query = $query;
+        if (!empty($GLOBALS['edit_poll']) && strpos($query, 'tnmp_slots') !== false) { return $GLOBALS['edit_slots']; }
+        if (!empty($GLOBALS['edit_poll']) && strpos($query, 'tnmp_attendees') !== false) { return $GLOBALS['edit_attendees']; }
         if (strpos($query, 'tnmp_contacts') !== false) {
             return array((object) array('id' => 1, 'name' => 'Ada Lovelace', 'email' => 'ada@example.test'), (object) array('id' => 2, 'name' => 'Grace Hopper', 'email' => 'grace@example.test'));
         }
         return array();
     }
+    public function get_row($query) { return $GLOBALS['edit_poll'] ?? null; }
 }
 $wpdb = new FakeDb();
 require_once dirname(__DIR__) . '/tn-meeting-polls/includes/storage.php';
@@ -70,4 +74,13 @@ $GLOBALS['user_settings'] = array('duration' => 90, 'earliest' => 8, 'latest' =>
 $_GET['tnmp_view'] = 'create';
 $preset_create = tnmp_render_app();
 check_view(strpos($preset_create, 'name="duration" min="5" max="1440" step="5" value="90"') !== false && strpos($preset_create, 'data-earliest="8" data-latest="18"') !== false, 'create form applies organiser presets');
+$GLOBALS['edit_poll'] = (object) array('id' => 42, 'organiser_id' => 7, 'status' => 'open', 'title' => 'Planning', 'description' => 'Project review', 'timezone' => 'Australia/Sydney');
+$GLOBALS['edit_slots'] = array((object) array('id' => 3, 'starts_at' => '2026-11-25 09:00:00', 'ends_at' => '2026-11-25 10:30:00', 'status' => 'open'));
+$GLOBALS['edit_attendees'] = array((object) array('id' => 8, 'email' => 'ada@example.test', 'name' => 'Ada Lovelace', 'holds' => 1));
+$_GET['tnmp_edit'] = 42;
+$edit = tnmp_render_app();
+check_view(strpos($edit, 'Edit meeting poll') !== false && strpos($edit, 'name="action" value="tnmp_edit"') !== false && strpos($edit, 'name="poll_id" value="42"') !== false, 'edit opens create tab with authorised poll');
+check_view(strpos($edit, 'value="Planning"') !== false && strpos($edit, 'value="2026-11-25"') !== false && strpos($edit, 'value="20:00"') !== false && strpos($edit, 'value="ada@example.test"') !== false, 'edit form preloads title, local time, and attendee');
+check_view(strpos($edit, 'tnmp-remove-time') !== false && strpos($edit, 'tnmp-remove-attendee') !== false && strpos($edit, 'Save poll and send updates') !== false, 'edit form allows changes and submission');
+unset($_GET['tnmp_edit']);
 echo "Poll views and creation fields passed.\n";
