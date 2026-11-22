@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/vote-view-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.12');
+define('TNMP_VERSION', '0.1.13');
 define('TNMP_URL', 'https://example.test/wp-content/plugins/tn-meeting-polls/');
 function nocache_headers() {}
 function wp_enqueue_style($handle, $url, $deps, $version) {}

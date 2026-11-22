@@ -191,18 +191,21 @@ function tnmp_render_contacts() {
     tnmp_return_field();
     echo '<h3>Add attendee</h3><div class="tnmp-row"><label>Name <input type="text" name="name" maxlength="190" required></label><label>Email <input type="email" name="email" maxlength="190" required></label></div><button type="submit" class="button button-primary">Add to contacts</button></form>';
     if (!$contacts) { echo '<p>No attendees in your contacts yet.</p>'; return; }
-    echo '<div class="tnmp-contact-list">';
+    echo '<div class="tnmp-scroll"><table class="tnmp-contact-table"><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Actions</th></tr></thead><tbody>';
     foreach ($contacts as $contact) {
-        echo '<div class="tnmp-card tnmp-saved-contact"><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="edit"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
+        $form_id = 'tnmp-edit-contact-' . (int) $contact->id;
+        echo '<tr><td><label class="tnmp-visually-hidden" for="tnmp-contact-name-' . (int) $contact->id . '">Name</label><input id="tnmp-contact-name-' . (int) $contact->id . '" form="' . esc_attr($form_id) . '" type="text" name="name" maxlength="190" value="' . esc_attr($contact->name) . '" required></td>';
+        echo '<td><label class="tnmp-visually-hidden" for="tnmp-contact-email-' . (int) $contact->id . '">Email</label><input id="tnmp-contact-email-' . (int) $contact->id . '" form="' . esc_attr($form_id) . '" type="email" name="email" maxlength="190" value="' . esc_attr($contact->email) . '" required></td>';
+        echo '<td><div class="tnmp-contact-actions"><form id="' . esc_attr($form_id) . '" method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="edit"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
         wp_nonce_field('tnmp_contact');
         tnmp_return_field();
-        echo '<div class="tnmp-row"><label>Name <input type="text" name="name" maxlength="190" value="' . esc_attr($contact->name) . '" required></label><label>Email <input type="email" name="email" maxlength="190" value="' . esc_attr($contact->email) . '" required></label><button type="submit" class="button">Save</button></div></form>';
+        echo '<button type="submit" class="button">Save</button></form>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" data-confirm="Remove this attendee from your contacts? Existing polls will be unchanged."><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="delete"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
         wp_nonce_field('tnmp_contact');
         tnmp_return_field();
-        echo '<button type="submit" class="button tnmp-remove-contact">Remove</button></form></div>';
+        echo '<button type="submit" class="button tnmp-remove-contact">Remove</button></form></div></td></tr>';
     }
-    echo '</div>';
+    echo '</tbody></table></div>';
 }
 
 function tnmp_date_group($index, $date = '', $items = array()) {

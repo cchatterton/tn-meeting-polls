@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/views-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.12');
+define('TNMP_VERSION', '0.1.13');
 function current_user_can($capability) { return true; }
 function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower($value)); }
 function wp_unslash($value) { return $value; }
@@ -67,6 +67,8 @@ $_GET['tnmp_view'] = 'contacts';
 $contacts = tnmp_render_app();
 check_view(strpos($contacts, 'Ada Lovelace') < strpos($contacts, 'Grace Hopper') && strpos($wpdb->query, 'ORDER BY name ASC, email ASC') !== false, 'contacts are shown alphabetically');
 check_view(strpos($contacts, 'value="edit"') !== false && strpos($contacts, 'value="delete"') !== false && strpos($contacts, 'value="add"') !== false, 'contacts can be added, edited and removed');
+check_view(strpos($contacts, '<table class="tnmp-contact-table">') !== false && substr_count($contacts, '<tbody><tr>') === 1 && substr_count($contacts, '</td></tr>') === 2, 'saved contacts are table rows');
+check_view((bool) preg_match('/<tr><td>.*?form="tnmp-edit-contact-1".*?<\/td><td>.*?form="tnmp-edit-contact-1".*?<\/td><td>.*?Save<\/button>.*?Remove<\/button>.*?<\/td><\/tr>/s', $contacts), 'name, email, save and remove share one row');
 $_GET['tnmp_view'] = 'settings';
 $settings = tnmp_render_app();
 check_view(strpos($settings, 'Default meeting length') !== false && strpos($settings, 'Earliest meeting hour') !== false && strpos($settings, 'Latest meeting hour') !== false, 'settings tab exposes requested preferences');

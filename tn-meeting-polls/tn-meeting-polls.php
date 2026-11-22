@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TN Meeting Polls
  * Description: Verified meeting-time polls with optional calendar placeholders.
- * Version: 0.1.12
+ * Version: 0.1.13
  * Author: Techn
  * Author URI: https://techn.com.au
  * Update URI: https://github.com/cchatterton/tn-meeting-polls
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('TNMP_VERSION', '0.1.12');
+define('TNMP_VERSION', '0.1.13');
 define('TNMP_FILE', __FILE__);
 define('TNMP_DIR', plugin_dir_path(__FILE__));
 define('TNMP_URL', plugin_dir_url(__FILE__));

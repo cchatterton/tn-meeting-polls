@@ -54,9 +54,12 @@
 .tnmp-contact-match { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5rem; border-bottom: 0.0625rem solid var(--tnmp-border); }
 .tnmp-contact-match[hidden] { display: none; }
 .tnmp-contact-match small { display: block; color: var(--tnmp-muted); }
-.tnmp-saved-contact { padding: 0.75rem 1rem; margin-bottom: 0.6rem; }
-.tnmp-saved-contact form { margin: 0; }
-.tnmp-saved-contact .tnmp-row { margin-bottom: 0.3rem; }
+.tnmp-contact-table { width: 100%; min-width: 40rem; table-layout: fixed; border-collapse: collapse; background: #fff; }
+.tnmp-contact-table th, .tnmp-contact-table td { padding: 0.625rem; border-bottom: 0.0625rem solid var(--tnmp-border); text-align: left; vertical-align: middle; }
+.tnmp-contact-table th:nth-child(1), .tnmp-contact-table th:nth-child(2) { width: 38%; }
+.tnmp-contact-table input[type="text"], .tnmp-contact-table input[type="email"] { width: 100%; }
+.tnmp-contact-actions { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+.tnmp-contact-actions form { margin: 0; }
 .tnmp-remove-contact { color: #9b351f; }
 .tnmp-submit { margin: 1.375rem 0 0; }
 .tnmp-notice { border-left: 0.25rem solid #ff6b00; background: #f2f6f8; padding: 0.75rem 1rem; margin: 0.875rem 0; }
