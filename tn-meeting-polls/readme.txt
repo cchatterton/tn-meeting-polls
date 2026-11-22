@@ -3,7 +3,7 @@ Contributors:
 Tags: scheduling, meetings, polls, calendar
 Requires at least: 7.0
 Requires PHP: 7.4
-Stable tag: 0.1.19
+Stable tag: 0.1.20
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -36,6 +36,9 @@ Invitation and calendar mail is queued and processed through WP-Cron. A separate
 The plugin stores attendee names, email addresses, votes, code hashes, session hashes, personal contact lists, meeting templates and calendar delivery state in site database tables. Organiser settings are stored in WordPress user metadata. Codes expire after 10 minutes. Verified voting sessions expire after 24 hours. Historical polls are deleted after the organiser's chosen retention period; existing polls receive a fresh retention window when this version is installed. Contacts and templates remain until their owner deletes them.
 
 == Changelog ==
+
+= 0.1.20 =
+* Allow past proposed dates and times; creating a poll no longer silently fails when a time has passed.
 
 = 0.1.19 =
 * Use preferred meeting hours only to position the native time picker; allow any chosen start time.

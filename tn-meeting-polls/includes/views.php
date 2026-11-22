@@ -7,7 +7,7 @@ function tnmp_notice_text($code) {
     $notices = array(
         'created' => 'Poll created. Invitation and calendar emails are being sent.',
         'invalid' => 'Please complete the meeting title, at least one valid time, and at least one attendee.',
-        'invalid_time' => 'Check the proposed dates, start times and duration. Start times must use 10-minute steps and be in the future.',
+        'invalid_time' => 'Check the proposed dates, start times and duration. Start times must use 10-minute steps.',
         'invalid_attendee' => 'Check attendee email addresses and remove duplicates.',
         'database' => 'The poll could not be saved. Please try again.',
         'slot_closed' => 'That proposed time is closed. Placeholder cancellations have been queued.',

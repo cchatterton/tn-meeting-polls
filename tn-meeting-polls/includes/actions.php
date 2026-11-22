@@ -63,7 +63,6 @@ function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, $hours 
             $end = $start->modify('+' . $minutes . ' minutes');
             $unchanged = isset($existing[$start->format('Y-m-d H:i:s') . '|' . $end->format('Y-m-d H:i:s')]);
             if (!$unchanged && ((int) substr($time, 3, 2)) % 10 !== 0) { return false; }
-            if (!$unchanged && $start->getTimestamp() < time() + 300) { return false; }
             $slots[] = array($start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'));
         }
     }
