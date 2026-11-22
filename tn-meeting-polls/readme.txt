@@ -3,7 +3,7 @@ Contributors:
 Tags: scheduling, meetings, polls, calendar
 Requires at least: 7.0
 Requires PHP: 7.4
-Stable tag: 0.1.3
+Stable tag: 0.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,9 +23,9 @@ The organiser can opt individual attendees into tentative calendar placeholders,
 
 == How it works ==
 
-Logged-in users can create polls with up to 10 proposed times and 50 attendees. The Create, Open polls and History views are separate. Organisers choose a date, add one or more start times for that date, and set each time's duration in minutes. Attendees receive a private voting link, request a six-digit email code, and vote without a WordPress account. The organiser sees vote counts and individual responses for open polls, refreshed every 15 seconds.
+Logged-in users can create polls with up to 10 proposed times and 50 attendees. The Create, Open polls and History views are separate. The form starts with one attendee and defaults to the WordPress site timezone, including fixed UTC offsets. Organisers set one duration for the whole poll, then choose dates and add one or more start times to each date. Attendees receive a private voting link, request a six-digit email code, and vote without a WordPress account. The organiser sees vote counts and individual responses for open polls, refreshed every 15 seconds.
 
-Calendar placeholders are opt-in per attendee. Each proposed time is sent as a separate iCalendar invitation in the message, without a file attachment, so supported email and calendar clients can offer Accept or Decline. An attendee's No cancels only their own placeholder. Closing a time cancels all its placeholders. Finalising sends a confirmed invitation to everyone who has not voted No for the chosen time and cancels other placeholders. Cancelling a poll cancels all outstanding placeholders.
+Calendar placeholders are opt-in per attendee. Each proposed time is sent as a separate iCalendar invitation with text/calendar as the primary message content, without a file attachment, so supported email and calendar clients can offer Accept or Decline. An attendee's No cancels only their own placeholder. Closing a time cancels all its placeholders. Finalising sends a confirmed invitation to everyone who has not voted No for the chosen time and cancels other placeholders. Cancelling a poll cancels all outstanding placeholders.
 
 Invitation and calendar mail is queued and processed through WP-Cron. On low-traffic sites, configure a real server cron to trigger wp-cron.php regularly. wp_mail() succeeding means the message was handed to the site's mail transport; it does not prove mailbox delivery. Calendar clients differ in how they process iCalendar updates.
 
@@ -34,6 +34,11 @@ Invitation and calendar mail is queued and processed through WP-Cron. On low-tra
 The plugin stores attendee names, email addresses, votes, code hashes, session hashes and calendar delivery state in site database tables. Codes expire after 10 minutes. Verified voting sessions expire after 24 hours. The plugin does not delete polls automatically.
 
 == Changelog ==
+
+= 0.1.4 =
+* Send calendar requests as primary text/calendar messages without attachments.
+* Default to the WordPress site timezone, including UTC offsets.
+* Set one duration for all proposed times and start with one attendee row.
 
 = 0.1.3 =
 * Send calendar invitations in the message without a separate ICS attachment and request RSVP.

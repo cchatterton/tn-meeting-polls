@@ -28,23 +28,27 @@ function tnmp_parse_local_datetime($value, $timezone) {
     }
 }
 
-function tnmp_parse_proposed_slots($dates, $times, $durations, $timezone) {
-    if (!is_array($dates) || !is_array($times) || !is_array($durations) || !$dates || count($dates) > 10 || count($dates) !== count($times) || count($dates) !== count($durations) || array_diff_key($dates, $times) || array_diff_key($dates, $durations)) {
+function tnmp_valid_timezone($timezone) {
+    return is_string($timezone) && (in_array($timezone, timezone_identifiers_list(DateTimeZone::ALL_WITH_BC), true) || (bool) preg_match('/^[+-](?:0\d|1[0-4]):[0-5]\d$/D', $timezone));
+}
+
+function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone) {
+    if (!is_array($dates) || !is_array($times) || !$dates || count($dates) > 10 || count($dates) !== count($times) || array_diff_key($dates, $times) || !is_scalar($duration) || !preg_match('/^\d+$/D', (string) $duration)) {
         return false;
     }
+    $minutes = (int) $duration;
+    if ($minutes < 5 || $minutes > 1440 || $minutes % 5 !== 0) { return false; }
     $slots = array();
     $seen = array();
     foreach ($dates as $index => $date) {
-        if (!is_string($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date) || !is_array($times[$index]) || !is_array($durations[$index]) || !$times[$index] || count($times[$index]) !== count($durations[$index])) {
+        if (!is_string($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date) || !is_array($times[$index]) || !$times[$index]) {
             return false;
         }
-        foreach ($times[$index] as $time_index => $time) {
-            $minutes = $durations[$index][$time_index] ?? null;
-            if (!is_string($time) || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D', $time) || !is_scalar($minutes) || !preg_match('/^\d+$/D', (string) $minutes)) {
+        foreach ($times[$index] as $time) {
+            if (!is_string($time) || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D', $time)) {
                 return false;
             }
-            $minutes = (int) $minutes;
-            if ($minutes < 5 || $minutes > 1440 || $minutes % 5 !== 0 || count($slots) >= 10) { return false; }
+            if (count($slots) >= 10) { return false; }
             $start = tnmp_parse_local_datetime($date . 'T' . $time, $timezone);
             if (!$start || $start->getTimestamp() < time() + 300 || isset($seen[$start->format('Y-m-d H:i:s')])) { return false; }
             $seen[$start->format('Y-m-d H:i:s')] = true;
@@ -64,19 +68,20 @@ function tnmp_create() {
     $title = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
     $description = sanitize_textarea_field(wp_unslash($_POST['description'] ?? ''));
     $timezone = sanitize_text_field(wp_unslash($_POST['timezone'] ?? ''));
-    if (!in_array($timezone, timezone_identifiers_list(), true)) {
-        $timezone = 'UTC';
+    if (!tnmp_valid_timezone($timezone)) {
+        $timezone = wp_timezone_string();
+        if (!tnmp_valid_timezone($timezone)) { $timezone = 'UTC'; }
     }
     $dates = isset($_POST['dates']) && is_array($_POST['dates']) ? wp_unslash($_POST['dates']) : array();
     $times = isset($_POST['times']) && is_array($_POST['times']) ? wp_unslash($_POST['times']) : array();
-    $durations = isset($_POST['durations']) && is_array($_POST['durations']) ? wp_unslash($_POST['durations']) : array();
+    $duration = isset($_POST['duration']) ? wp_unslash($_POST['duration']) : '';
     $emails = isset($_POST['emails']) && is_array($_POST['emails']) ? array_values(wp_unslash($_POST['emails'])) : array();
     $names = isset($_POST['names']) && is_array($_POST['names']) ? array_values(wp_unslash($_POST['names'])) : array();
     $holds = isset($_POST['holds']) && is_array($_POST['holds']) ? wp_unslash($_POST['holds']) : array();
     if ($title === '' || strlen($title) > 190 || count($emails) > 50) {
         tnmp_redirect('invalid');
     }
-    $slots = tnmp_parse_proposed_slots($dates, $times, $durations, $timezone);
+    $slots = tnmp_parse_proposed_slots($dates, $times, $duration, $timezone);
     if ($slots === false) { tnmp_redirect('invalid_time'); }
     $attendees = array();
     $seen = array();

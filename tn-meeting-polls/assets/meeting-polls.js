@@ -36,7 +36,6 @@
       var group = button.closest('.tnmp-date-group');
       var row = group.querySelector('.tnmp-time-row').cloneNode(true);
       row.querySelector('input[type="time"]').value = '';
-      row.querySelector('input[type="number"]').value = '60';
       group.querySelector('.tnmp-times').appendChild(row);
       updateSlotButtons();
     });
@@ -53,7 +52,6 @@
         input.name = input.name.replace(/\[\d+\]/, '[' + index + ']');
       });
       group.querySelector('input[type="time"]').value = '';
-      group.querySelector('input[type="number"]').value = '60';
       dates.appendChild(group);
       updateSlotButtons();
     });

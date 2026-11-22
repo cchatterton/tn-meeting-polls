@@ -75,33 +75,29 @@ function tnmp_mail_calendar($attendee, $poll, $slot, $event, $kind) {
     $when = tnmp_format_time($slot->starts_at, $poll->timezone) . ' (' . $poll->timezone . ')';
     if ($kind === 'cancel') {
         $subject = 'Cancelled: ' . $poll->title . ' — ' . $when;
-        $body = "The calendar placeholder for this proposed time has been cancelled.\n\n";
     } elseif ($kind === 'final') {
         $subject = 'Confirmed: ' . $poll->title . ' — ' . $when;
-        $body = "This is the confirmed meeting time. Please respond to this calendar invitation.\n\n";
     } else {
         $subject = 'Placeholder: ' . $poll->title . ' — ' . $when;
-        $body = "This is a tentative calendar placeholder for one proposed time. Please vote using the separate poll email.\n\n";
     }
-    $body .= "Time: $when\n\n";
-    if ($poll->description !== '') {
-        $body .= $poll->description . "\n\n";
-    }
-    $body .= $kind === 'cancel' ? "The calendar invitation has been cancelled.\n" : "Accept or decline this calendar invitation in your email or calendar app.\n";
-    $calendar_part = function ($mailer) use ($ical, $body) {
-        if (property_exists($mailer, 'Ical')) {
-            $mailer->Ical = $ical;
-            $mailer->AltBody = $body;
-            $mailer->isHTML(true);
-            $mailer->Body = '<p>' . nl2br(esc_html($body)) . '</p>';
-        }
+    $method = $kind === 'cancel' ? 'CANCEL' : 'REQUEST';
+    $calendar_part = function ($mailer) use ($ical, $method) {
+        $mailer->isHTML(false);
+        $mailer->ContentType = 'text/calendar; method=' . $method;
+        $mailer->CharSet = 'UTF-8';
+        $mailer->Body = $ical;
+        $mailer->AltBody = '';
+        if (property_exists($mailer, 'Ical')) { $mailer->Ical = ''; }
     };
     add_action('phpmailer_init', $calendar_part, 999);
-    $sent = wp_mail($attendee->email, $subject, $body, array('Content-Type: text/html; charset=UTF-8'));
-    remove_action('phpmailer_init', $calendar_part, 999);
-    if (isset($GLOBALS['phpmailer']) && property_exists($GLOBALS['phpmailer'], 'Ical')) {
-        $GLOBALS['phpmailer']->Ical = '';
-        $GLOBALS['phpmailer']->AltBody = '';
+    try {
+        $sent = wp_mail($attendee->email, $subject, $ical, array('Content-Type: text/calendar; method=' . $method . '; charset=UTF-8'));
+    } finally {
+        remove_action('phpmailer_init', $calendar_part, 999);
+        if (isset($GLOBALS['phpmailer']) && property_exists($GLOBALS['phpmailer'], 'Ical')) {
+            $GLOBALS['phpmailer']->Ical = '';
+            $GLOBALS['phpmailer']->AltBody = '';
+        }
     }
     return $sent;
 }

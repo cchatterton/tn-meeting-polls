@@ -2,6 +2,12 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.4 - 2026-11-22
+
+- Send each calendar request as the primary text/calendar message content, without a file attachment.
+- Default to the WordPress site timezone, including UTC offset settings.
+- Set one duration for every proposed time and start the form with one attendee.
+
 ## 0.1.3 - 2026-11-22
 
 - Send calendar invitations as inline calendar requests without separate ICS attachments, with RSVP enabled.

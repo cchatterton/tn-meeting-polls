@@ -80,27 +80,30 @@ function tnmp_return_field() {
 
 function tnmp_render_create_form() {
     $zone = wp_timezone_string() ?: 'UTC';
-    if (!in_array($zone, timezone_identifiers_list(), true)) { $zone = 'UTC'; }
+    if (!tnmp_valid_timezone($zone)) { $zone = 'UTC'; }
+    $timezone_options = timezone_identifiers_list();
     echo '<form class="tnmp-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
     echo '<input type="hidden" name="action" value="tnmp_create">';
     wp_nonce_field('tnmp_create');
     tnmp_return_field();
     echo '<label>Meeting title <input type="text" name="title" maxlength="190" required></label>';
     echo '<label>Details <textarea name="description" rows="3" placeholder="Purpose, location, or meeting link"></textarea></label>';
-    echo '<label>Time zone <select name="timezone" required>';
-    foreach (timezone_identifiers_list() as $timezone) {
+    echo '<label>Time zone (defaults to the WordPress site setting) <select name="timezone" required>';
+    if (!in_array($zone, $timezone_options, true)) {
+        echo '<option value="' . esc_attr($zone) . '" selected>' . esc_html($zone) . ' (site setting)</option>';
+    }
+    foreach ($timezone_options as $timezone) {
         echo '<option value="' . esc_attr($timezone) . '"' . selected($timezone, $zone, false) . '>' . esc_html($timezone) . '</option>';
     }
     echo '</select></label>';
-    echo '<h3>Proposed dates and times</h3><p>Pick a date, then add one or more start times. Set a duration for each time. Up to 10 options total.</p>';
+    echo '<label>Meeting duration (minutes) <input type="number" name="duration" min="5" max="1440" step="5" value="60" required></label>';
+    echo '<h3>Proposed dates and times</h3><p>Pick a date, then add one or more start times for that date. The duration applies to every proposed time. Up to 10 options total.</p>';
     echo '<div id="tnmp-dates">';
     tnmp_date_group(0);
     echo '</div><button type="button" class="button" id="tnmp-add-date">Add date</button>';
     echo '<h3>Attendees</h3><p>Select “Send placeholders” only for people who should receive one tentative calendar invitation per proposed time.</p>';
     echo '<div id="tnmp-attendees">';
-    for ($i = 0; $i < 3; $i++) {
-        tnmp_attendee_row($i, $i === 0);
-    }
+    tnmp_attendee_row(0, true);
     echo '</div><button type="button" class="button tnmp-add" data-target="tnmp-attendees" data-limit="50">Add attendee</button>';
     echo '<p class="tnmp-submit"><button type="submit" class="button button-primary">Create poll and send invitations</button></p>';
     echo '</form>';
@@ -115,8 +118,7 @@ function tnmp_date_group($index) {
 }
 
 function tnmp_time_row($index) {
-    echo '<div class="tnmp-row tnmp-time-row"><label>Start <input type="time" name="times[' . (int) $index . '][]" required></label>';
-    echo '<label>Duration (minutes) <input type="number" name="durations[' . (int) $index . '][]" min="5" max="1440" step="5" value="60" required></label></div>';
+    echo '<div class="tnmp-row tnmp-time-row"><label>Start <input type="time" name="times[' . (int) $index . '][]" required></label></div>';
 }
 
 function tnmp_attendee_row($index, $required = false) {

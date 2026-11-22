@@ -8,9 +8,9 @@ $GLOBALS['tnmp_mail_hook'] = null;
 function add_action($name, $callback) { if ($name === 'phpmailer_init') { $GLOBALS['tnmp_mail_hook'] = $callback; } }
 function remove_action($name, $callback) { if ($name === 'phpmailer_init') { $GLOBALS['tnmp_mail_hook'] = null; } }
 function wp_mail($to, $subject, $body, $headers, $attachments = array()) {
-    $mailer = new class { public $Ical = ''; public $AltBody = ''; public $Body = ''; public function isHTML($enabled) {} };
+    $mailer = new class { public $Ical = ''; public $AltBody = ''; public $Body = ''; public $ContentType = 'text/plain'; public $CharSet = ''; public function isHTML($enabled) { $this->ContentType = $enabled ? 'text/html' : 'text/plain'; } };
     $GLOBALS['tnmp_mail_hook']($mailer);
-    $GLOBALS['tnmp_sent_mail'] = array('to' => $to, 'subject' => $subject, 'headers' => $headers, 'attachments' => $attachments, 'ical' => $mailer->Ical, 'alt' => $mailer->AltBody);
+    $GLOBALS['tnmp_sent_mail'] = array('to' => $to, 'subject' => $subject, 'headers' => $headers, 'attachments' => $attachments, 'body' => $mailer->Body, 'content_type' => $mailer->ContentType, 'charset' => $mailer->CharSet);
     return true;
 }
 require_once dirname(__DIR__) . '/tn-meeting-polls/includes/calendar.php';
@@ -36,12 +36,12 @@ check(strpos($hold, 'DESCRIPTION:First line\\nSecond line') !== false, 'escaped 
 check(strpos($hold, "DTSTART:20261125T090000Z\r\n") !== false, 'UTC start');
 check(strpos($hold, 'ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:person@example.com') !== false, 'calendar invite requests RSVP');
 check(tnmp_mail_calendar($attendee, $poll, $slot, $event, 'hold') === true, 'calendar invite sent');
-check($GLOBALS['tnmp_sent_mail']['attachments'] === array() && strpos($GLOBALS['tnmp_sent_mail']['ical'], 'METHOD:REQUEST') !== false, 'calendar invite is inline without an attachment');
-check(strpos($GLOBALS['tnmp_sent_mail']['alt'], 'Accept or decline') !== false, 'calendar invite has readable body');
+check($GLOBALS['tnmp_sent_mail']['attachments'] === array() && $GLOBALS['tnmp_sent_mail']['content_type'] === 'text/calendar; method=REQUEST' && $GLOBALS['tnmp_sent_mail']['charset'] === 'UTF-8' && strpos($GLOBALS['tnmp_sent_mail']['body'], 'METHOD:REQUEST') !== false, 'meeting request is the primary calendar MIME body without an attachment');
 $event->sent_once = 1;
 $cancel = tnmp_ics($poll, $slot, $attendee, $event, 'cancel');
 check(strpos($cancel, "METHOD:CANCEL\r\n") !== false, 'cancel method');
 check(strpos($cancel, "SEQUENCE:1\r\n") !== false, 'cancel increments sequence');
+check(tnmp_mail_calendar($attendee, $poll, $slot, $event, 'cancel') === true && $GLOBALS['tnmp_sent_mail']['content_type'] === 'text/calendar; method=CANCEL', 'cancellation is a calendar MIME message');
 foreach (explode("\r\n", $cancel) as $line) {
     check(strlen($line) <= 75, 'calendar line length');
 }
@@ -50,8 +50,9 @@ check(tnmp_parse_local_datetime('2026-11-25T20:00', 'Australia/Sydney')->format(
 $future = new DateTimeImmutable('+30 days', new DateTimeZone('Australia/Sydney'));
 $first_date = $future->format('Y-m-d');
 $second_date = $future->modify('+1 day')->format('Y-m-d');
-$slots = tnmp_parse_proposed_slots(array(0 => $first_date, 1 => $second_date), array(0 => array('09:00', '14:30'), 1 => array('10:00')), array(0 => array('60', '90'), 1 => array('30')), 'Australia/Sydney');
-check(is_array($slots) && count($slots) === 3 && strtotime($slots[1][1]) - strtotime($slots[1][0]) === 5400, 'multiple times per date use start and duration');
-check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00', '09:00')), array(0 => array('60', '30')), 'Australia/Sydney') === false, 'duplicate proposed starts rejected');
-check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00')), array(0 => array('0')), 'Australia/Sydney') === false, 'invalid duration rejected');
+$slots = tnmp_parse_proposed_slots(array(0 => $first_date, 1 => $second_date), array(0 => array('09:00', '14:30'), 1 => array('10:00')), '90', 'Australia/Sydney');
+check(is_array($slots) && count($slots) === 3 && strtotime($slots[0][1]) - strtotime($slots[0][0]) === 5400 && strtotime($slots[1][1]) - strtotime($slots[1][0]) === 5400, 'one duration applies to every time on all dates');
+check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00', '09:00')), '60', 'Australia/Sydney') === false, 'duplicate proposed starts rejected');
+check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00')), '0', 'Australia/Sydney') === false, 'invalid duration rejected');
+check(tnmp_valid_timezone('+10:00') && tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00')), '60', '+10:00') !== false, 'WordPress UTC-offset timezone is accepted for scheduling');
 echo "Calendar and time checks passed.\n";
