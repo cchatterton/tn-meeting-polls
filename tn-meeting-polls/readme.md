@@ -1,7 +1,7 @@
 # TN Meeting Polls
 
 Author: Techn  
-Version: 0.1.4
+Version: 0.1.5
 Status: MVP  
 Branding mode: Author Branded
 
@@ -11,7 +11,7 @@ Create meeting-time polls for logged-in organisers and verified email voting for
 
 ## Use
 
-Activate the plugin and open **Meeting Polls** in WordPress. The Create, Open polls and History views are separate. In Create, the time zone defaults to the WordPress site setting. Set one meeting duration, choose a date, add one or more start times for that date, and add attendees from the single initial row. To give organisers a front-end dashboard, add `[tn_meeting_polls]` to a page. Voting links are emailed to attendees. Configure a reliable WordPress mail transport and a server cron that triggers WP-Cron on low-traffic sites.
+Activate the plugin and open **Meeting Polls** in WordPress. The Create, Open polls and History views are separate. In Create, the time zone defaults to the WordPress site setting. Set one meeting duration, choose a date, add one or more start times in 10-minute steps for that date, and add attendees from the single initial row. To give organisers a front-end dashboard, add `[tn_meeting_polls]` to a page. Voting links are emailed to attendees. Configure a reliable WordPress mail transport and a server cron that triggers WP-Cron on low-traffic sites.
 
 ## Calendar behaviour
 

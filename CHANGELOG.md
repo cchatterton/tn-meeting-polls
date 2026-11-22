@@ -2,6 +2,11 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.5 - 2026-11-22
+
+- Offer and validate meeting start times in 10-minute steps.
+- Send calendar requests through SMTP2GO's MIME endpoint when its WordPress mail plugin is active, preserving real invitation MIME for Outlook.
+
 ## 0.1.4 - 2026-11-22
 
 - Send each calendar request as the primary text/calendar message content, without a file attachment.

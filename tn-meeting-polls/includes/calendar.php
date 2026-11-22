@@ -81,6 +81,10 @@ function tnmp_mail_calendar($attendee, $poll, $slot, $event, $kind) {
         $subject = 'Placeholder: ' . $poll->title . ' — ' . $when;
     }
     $method = $kind === 'cancel' ? 'CANCEL' : 'REQUEST';
+    $smtp2go_result = tnmp_mail_calendar_smtp2go($attendee->email, $subject, $ical, $method);
+    if ($smtp2go_result !== null) {
+        return $smtp2go_result;
+    }
     $calendar_part = function ($mailer) use ($ical, $method) {
         $mailer->isHTML(false);
         $mailer->ContentType = 'text/calendar; method=' . $method;
@@ -100,6 +104,63 @@ function tnmp_mail_calendar($attendee, $poll, $slot, $event, $kind) {
         }
     }
     return $sent;
+}
+
+/**
+ * SMTP2GO's WordPress mailer sends only text/html and text/plain through
+ * /email/send. Its MIME endpoint preserves the calendar request verbatim.
+ * Return null when that mailer is not active so ordinary wp_mail still works.
+ */
+function tnmp_mail_calendar_smtp2go($recipient, $subject, $ical, $method) {
+    if (!get_option('smtp2go_enabled') || !class_exists('\\SMTP2GO\\App\\SettingsHelper') || !class_exists('\\SMTP2GO\\App\\SecureApiKeyHelper')) {
+        return null;
+    }
+
+    $settings = '\\SMTP2GO\\App\\SettingsHelper';
+    $key = $settings::getOption('smtp2go_api_key');
+    $sender = $settings::getOption('smtp2go_from_address');
+    if (!is_string($key) || $key === '' || !is_email($sender) || !is_email($recipient)) {
+        return false;
+    }
+    $key_helper = new \SMTP2GO\App\SecureApiKeyHelper();
+    $key = $key_helper->decryptKey($key);
+    if (!is_string($key) || $key === '') {
+        return false;
+    }
+
+    if (!class_exists('\\PHPMailer\\PHPMailer\\PHPMailer')) {
+        require_once ABSPATH . WPINC . '/PHPMailer/PHPMailer.php';
+        require_once ABSPATH . WPINC . '/PHPMailer/Exception.php';
+    }
+    try {
+        $mailer = new \PHPMailer\PHPMailer\PHPMailer(true);
+        $mailer->CharSet = 'UTF-8';
+        $mailer->setFrom($sender, (string) $settings::getOption('smtp2go_from_name'));
+        $mailer->addAddress($recipient);
+        $mailer->Subject = $subject;
+        $mailer->ContentType = 'text/calendar; method=' . $method;
+        $mailer->Body = $ical;
+        $mailer->preSend();
+        $mime = $mailer->getSentMIMEMessage();
+    } catch (\Exception $e) {
+        return false;
+    }
+
+    $region = $settings::getApiRegion();
+    $host = in_array($region, array('au', 'eu', 'us'), true) ? $region . '-api.smtp2go.com' : 'api.smtp2go.com';
+    $response = wp_remote_post('https://' . $host . '/v3/email/mime', array(
+        'headers' => array('Content-Type' => 'application/json', 'X-Smtp2go-Api-Key' => $key),
+        'body' => wp_json_encode(array('mime_email' => base64_encode($mime))),
+        'timeout' => 20,
+    ));
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        return false;
+    }
+    $result = json_decode(wp_remote_retrieve_body($response), true);
+    return is_array($result)
+        && !empty($result['data']['succeeded'])
+        && empty($result['data']['failed'])
+        && empty($result['data']['failures']);
 }
 
 function tnmp_mail_invitation($poll, $attendee, $token) {

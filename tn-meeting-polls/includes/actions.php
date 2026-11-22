@@ -45,7 +45,7 @@ function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone) {
             return false;
         }
         foreach ($times[$index] as $time) {
-            if (!is_string($time) || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D', $time)) {
+            if (!is_string($time) || !preg_match('/^([01]\d|2[0-3]):[0-5]0$/D', $time)) {
                 return false;
             }
             if (count($slots) >= 10) { return false; }

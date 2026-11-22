@@ -7,7 +7,7 @@ function tnmp_notice_text($code) {
     $notices = array(
         'created' => 'Poll created. Invitation and calendar emails are being sent.',
         'invalid' => 'Please complete the meeting title, at least one valid time, and at least one attendee.',
-        'invalid_time' => 'Check the proposed dates, start times and durations. Each time must be in the future.',
+        'invalid_time' => 'Check the proposed dates, start times and duration. Start times must use 10-minute steps and be in the future.',
         'invalid_attendee' => 'Check attendee email addresses and remove duplicates.',
         'database' => 'The poll could not be saved. Please try again.',
         'slot_closed' => 'That proposed time is closed. Placeholder cancellations have been queued.',
@@ -97,7 +97,7 @@ function tnmp_render_create_form() {
     }
     echo '</select></label>';
     echo '<label>Meeting duration (minutes) <input type="number" name="duration" min="5" max="1440" step="5" value="60" required></label>';
-    echo '<h3>Proposed dates and times</h3><p>Pick a date, then add one or more start times for that date. The duration applies to every proposed time. Up to 10 options total.</p>';
+    echo '<h3>Proposed dates and times</h3><p>Pick a date, then add one or more start times in 10-minute steps. The duration applies to every proposed time. Up to 10 options total.</p>';
     echo '<div id="tnmp-dates">';
     tnmp_date_group(0);
     echo '</div><button type="button" class="button" id="tnmp-add-date">Add date</button>';
@@ -118,7 +118,7 @@ function tnmp_date_group($index) {
 }
 
 function tnmp_time_row($index) {
-    echo '<div class="tnmp-row tnmp-time-row"><label>Start <input type="time" name="times[' . (int) $index . '][]" required></label></div>';
+    echo '<div class="tnmp-row tnmp-time-row"><label>Start <input type="time" name="times[' . (int) $index . '][]" step="600" required></label></div>';
 }
 
 function tnmp_attendee_row($index, $required = false) {

@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/views-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.4');
+define('TNMP_VERSION', '0.1.5');
 function current_user_can($capability) { return true; }
 function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower($value)); }
 function wp_unslash($value) { return $value; }
@@ -34,6 +34,7 @@ $_GET['tnmp_view'] = 'create';
 $create = tnmp_render_app();
 check_view(strpos($create, 'name="duration"') !== false && substr_count($create, 'name="duration"') === 1 && strpos($create, 'name="dates[0]"') !== false && strpos($create, 'name="times[0][]"') !== false && strpos($create, 'name="durations[') === false, 'create view sets one duration before dates and times');
 check_view(strpos($create, 'name="duration"') < strpos($create, 'name="dates[0]"') && strpos($create, 'name="dates[0]"') < strpos($create, 'name="times[0][]"'), 'create fields follow duration, date, time order');
+check_view(strpos($create, 'name="times[0][]" step="600"') !== false, 'start time picker uses 10-minute steps');
 check_view(substr_count($create, 'name="emails[]"') === 1, 'create view starts with one attendee slot');
 check_view(strpos($create, 'value="Australia/Sydney" selected') !== false, 'WordPress named timezone is selected by default');
 check_view(strpos($create, 'id="tnmp-results"') === false, 'create view has no live results');
