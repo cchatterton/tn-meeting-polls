@@ -99,11 +99,13 @@ function tnmp_return_field() {
 
 function tnmp_render_create_form($poll = null) {
     $settings = tnmp_user_settings(get_current_user_id());
+    $contacts = tnmp_get_contacts(get_current_user_id());
     $zone = $poll ? $poll->timezone : (wp_timezone_string() ?: 'UTC');
     if (!tnmp_valid_timezone($zone)) { $zone = 'UTC'; }
     $groups = array();
     $poll_attendees = array();
     $mixed_duration = false;
+    $too_many_selected = false;
     if ($poll) {
         $poll_attendees = tnmp_get_attendees($poll->id);
         foreach (tnmp_get_slots($poll->id) as $slot) {
@@ -112,6 +114,17 @@ function tnmp_render_create_form($poll = null) {
             $slot_duration = (int) ((strtotime($slot->ends_at . ' UTC') - strtotime($slot->starts_at . ' UTC')) / 60);
             if (!isset($duration)) { $duration = $slot_duration; }
             elseif ($slot_duration !== $duration) { $mixed_duration = true; }
+        }
+    } elseif (isset($_GET['tnmp_contacts']) && is_array($_GET['tnmp_contacts'])) {
+        $selected_ids = array();
+        $too_many_selected = count($_GET['tnmp_contacts']) > 50;
+        foreach (array_slice(wp_unslash($_GET['tnmp_contacts']), 0, 50) as $id) {
+            if (is_scalar($id) && absint($id)) { $selected_ids[absint($id)] = true; }
+        }
+        foreach ($contacts as $contact) {
+            if (isset($selected_ids[(int) $contact->id])) {
+                $poll_attendees[] = (object) array('name' => $contact->name, 'email' => $contact->email, 'holds' => 0);
+            }
         }
     }
     $duration = $duration ?? $settings['duration'];
@@ -142,7 +155,7 @@ function tnmp_render_create_form($poll = null) {
     } else { tnmp_date_group(0); }
     echo '</div><button type="button" class="button" id="tnmp-add-date">Add date</button>';
     echo '<h3>Attendees</h3><p>Select “Send placeholders” only for people who should receive one tentative calendar invitation per proposed time.</p>';
-    $contacts = tnmp_get_contacts(get_current_user_id());
+    if ($too_many_selected) { echo '<p class="tnmp-notice">A poll can include up to 50 attendees. The first 50 selected contacts were added.</p>'; }
     if ($contacts) {
         echo '<div class="tnmp-contact-picker"><label for="tnmp-contact-search">Find an attendee in your contacts</label><input id="tnmp-contact-search" type="search" autocomplete="off" placeholder="Type a name or email" aria-controls="tnmp-contact-matches">';
         echo '<div id="tnmp-contact-matches" class="tnmp-contact-matches" aria-live="polite">';
@@ -191,10 +204,14 @@ function tnmp_render_contacts() {
     tnmp_return_field();
     echo '<h3>Add attendee</h3><div class="tnmp-row"><label>Name <input type="text" name="name" maxlength="190" required></label><label>Email <input type="email" name="email" maxlength="190" required></label></div><button type="submit" class="button button-primary">Add to contacts</button></form>';
     if (!$contacts) { echo '<p>No attendees in your contacts yet.</p>'; return; }
-    echo '<div class="tnmp-scroll"><table class="tnmp-contact-table"><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Actions</th></tr></thead><tbody>';
+    echo '<form id="tnmp-invite-selected" method="get" action="' . esc_url(is_admin() ? admin_url('admin.php') : get_permalink()) . '">';
+    if (is_admin()) { echo '<input type="hidden" name="page" value="tn-meeting-polls">'; }
+    echo '<input type="hidden" name="tnmp_view" value="create"></form>';
+    echo '<div class="tnmp-scroll"><table class="tnmp-contact-table"><thead><tr><th scope="col">Select</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Actions</th></tr></thead><tbody>';
     foreach ($contacts as $contact) {
         $form_id = 'tnmp-edit-contact-' . (int) $contact->id;
-        echo '<tr><td><label class="tnmp-visually-hidden" for="tnmp-contact-name-' . (int) $contact->id . '">Name</label><input id="tnmp-contact-name-' . (int) $contact->id . '" form="' . esc_attr($form_id) . '" type="text" name="name" maxlength="190" value="' . esc_attr($contact->name) . '" required></td>';
+        echo '<tr><td><label class="tnmp-visually-hidden" for="tnmp-select-contact-' . (int) $contact->id . '">Select ' . esc_html($contact->name) . '</label><input id="tnmp-select-contact-' . (int) $contact->id . '" form="tnmp-invite-selected" type="checkbox" name="tnmp_contacts[]" value="' . (int) $contact->id . '"></td>';
+        echo '<td><label class="tnmp-visually-hidden" for="tnmp-contact-name-' . (int) $contact->id . '">Name</label><input id="tnmp-contact-name-' . (int) $contact->id . '" form="' . esc_attr($form_id) . '" type="text" name="name" maxlength="190" value="' . esc_attr($contact->name) . '" required></td>';
         echo '<td><label class="tnmp-visually-hidden" for="tnmp-contact-email-' . (int) $contact->id . '">Email</label><input id="tnmp-contact-email-' . (int) $contact->id . '" form="' . esc_attr($form_id) . '" type="email" name="email" maxlength="190" value="' . esc_attr($contact->email) . '" required></td>';
         echo '<td><div class="tnmp-contact-actions"><form id="' . esc_attr($form_id) . '" method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="edit"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
         wp_nonce_field('tnmp_contact');
@@ -205,7 +222,7 @@ function tnmp_render_contacts() {
         tnmp_return_field();
         echo '<button type="submit" class="button tnmp-remove-contact">Remove</button></form></div></td></tr>';
     }
-    echo '</tbody></table></div>';
+    echo '</tbody></table></div><p class="tnmp-submit"><button type="submit" form="tnmp-invite-selected" class="button button-primary">Invite selected</button></p>';
 }
 
 function tnmp_date_group($index, $date = '', $items = array()) {

@@ -2,6 +2,10 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.14 - 2026-11-22
+
+- Select saved attendees from the contact table and open Create a poll with those people already added.
+
 ## 0.1.13 - 2026-11-22
 
 - Show saved attendees in a table, with name, email, Save and Remove on one row per attendee.
