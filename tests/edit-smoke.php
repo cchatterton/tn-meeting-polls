@@ -100,7 +100,7 @@ require_once dirname(__DIR__) . '/tn-meeting-polls/includes/storage.php';
 require_once dirname(__DIR__) . '/tn-meeting-polls/includes/calendar.php';
 require_once dirname(__DIR__) . '/tn-meeting-polls/includes/actions.php';
 $_POST = array('poll_id' => 1, 'title' => 'Planning', 'description' => '', 'timezone' => 'UTC', 'duration' => '60',
-    'dates' => array(0 => $date), 'times' => array(0 => array('09:00', '11:00')),
+    'dates' => array(0 => $date), 'time_hours' => array(0 => array('09', '11')), 'time_minutes' => array(0 => array('00', '00')),
     'emails' => array('ada@example.test', 'new@example.test'), 'names' => array('Ada', 'New person'),
     'holds' => array(0 => '1', 1 => '1'));
 try { tnmp_edit(); } catch (RuntimeException $error) { if ($error->getMessage() !== 'redirect') { throw $error; } }

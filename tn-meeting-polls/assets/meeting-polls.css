@@ -26,8 +26,6 @@
 .tnmp-hero p { margin: 0; max-width: 42rem; }
 .tnmp-hero .tnmp-hero-eyebrow { color: #ffb77f; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; }
 .tnmp-version { flex: none; align-self: flex-start; font-size: 0.8rem; opacity: 0.85; }
-.tnmp-vote-header { position: relative; padding-right: 4rem; }
-.tnmp-vote-header .tnmp-version { position: absolute; top: 0; right: 0; }
 .tnmp-wrap, .tnmp-vote-shell { box-sizing: border-box; max-width: 70rem; color: #0a263b; }
 .tnmp-wrap *, .tnmp-vote-shell * { box-sizing: border-box; }
 .tnmp-wrap h2 { margin: 1.875rem 0 0.75rem; }
@@ -43,6 +41,8 @@
 .tnmp-date-group > label { display: block; max-width: 18rem; font-weight: 600; margin-bottom: 0.75rem; }
 .tnmp-date-group > label input { display: block; width: 100%; margin-top: 0.25rem; }
 .tnmp-date-group .tnmp-row label { flex: 0 1 14rem; }
+.tnmp-date-group .tnmp-time-row label { flex: 0 1 8rem; min-width: 6rem; }
+.tnmp-time-row select { display: block; width: 100%; margin-top: 0.25rem; }
 .tnmp-row { display: flex; align-items: flex-end; gap: 0.75rem; margin: 0 0 0.625rem; flex-wrap: wrap; }
 .tnmp-row label { display: block; min-width: 11.25rem; flex: 1; font-weight: 600; }
 .tnmp-row input[type="text"], .tnmp-row input[type="email"], .tnmp-row input[type="time"] { width: 100%; margin-top: 0.25rem; }
@@ -74,7 +74,7 @@
 .tnmp-vote-body { background: #f2f6f8; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .tnmp-vote-shell { max-width: 47.5rem; margin: 0 auto; padding: 1.5rem 1rem 3.75rem; }
 .tnmp-vote-shell h1 { margin: 0.3125rem 0 0.625rem; font-size: clamp(1.625rem, 5vw, 2.25rem); }
-.tnmp-eyebrow { color: #063b5d; font-weight: 700; margin: 0; }
+.tnmp-voter-meta { margin: 0 0 0.75rem; }
 .tnmp-vote-shell button { cursor: pointer; border: 0.0625rem solid #002840; border-radius: 0.3125rem; padding: 0.625rem 0.9375rem; background: #002840; color: white; font: inherit; }
 .tnmp-verify-row, .tnmp-code-form { display: flex; align-items: stretch; gap: 0.5rem; min-width: 0; }
 .tnmp-verify-row > form { margin: 0; }

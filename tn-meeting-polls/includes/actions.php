@@ -80,6 +80,25 @@ function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, $hours 
     return $slots;
 }
 
+function tnmp_submitted_times() {
+    $hours = isset($_POST['time_hours']) && is_array($_POST['time_hours']) ? wp_unslash($_POST['time_hours']) : null;
+    $minutes = isset($_POST['time_minutes']) && is_array($_POST['time_minutes']) ? wp_unslash($_POST['time_minutes']) : null;
+    if ($hours === null && $minutes === null) {
+        return isset($_POST['times']) && is_array($_POST['times']) ? wp_unslash($_POST['times']) : false;
+    }
+    if (!is_array($hours) || !is_array($minutes) || array_keys($hours) !== array_keys($minutes)) { return false; }
+    $times = array();
+    foreach ($hours as $date_index => $hour_values) {
+        if (!is_array($hour_values) || !isset($minutes[$date_index]) || !is_array($minutes[$date_index]) || count($hour_values) !== count($minutes[$date_index])) { return false; }
+        foreach ($hour_values as $position => $hour) {
+            $minute = $minutes[$date_index][$position] ?? null;
+            if (!is_string($hour) || !is_string($minute) || !preg_match('/^(?:[01]\d|2[0-3])$/D', $hour) || !preg_match('/^[0-5]\d$/D', $minute)) { return false; }
+            $times[$date_index][] = $hour . ':' . $minute;
+        }
+    }
+    return $times;
+}
+
 function tnmp_submitted_attendees() {
     $emails = isset($_POST['emails']) && is_array($_POST['emails']) ? array_values(wp_unslash($_POST['emails'])) : array();
     $names = isset($_POST['names']) && is_array($_POST['names']) ? array_values(wp_unslash($_POST['names'])) : array();
@@ -163,7 +182,7 @@ function tnmp_create() {
         if (!tnmp_valid_timezone($timezone)) { $timezone = 'UTC'; }
     }
     $dates = isset($_POST['dates']) && is_array($_POST['dates']) ? wp_unslash($_POST['dates']) : array();
-    $times = isset($_POST['times']) && is_array($_POST['times']) ? wp_unslash($_POST['times']) : array();
+    $times = tnmp_submitted_times();
     $duration = isset($_POST['duration']) ? wp_unslash($_POST['duration']) : '';
     if ($title === '' || strlen($title) > 190) {
         tnmp_redirect('invalid');
@@ -248,7 +267,7 @@ function tnmp_edit() {
     $timezone = sanitize_text_field(wp_unslash($_POST['timezone'] ?? ''));
     if ($title === '' || strlen($title) > 190 || !tnmp_valid_timezone($timezone)) { tnmp_redirect('invalid', $poll_id); }
     $dates = isset($_POST['dates']) && is_array($_POST['dates']) ? wp_unslash($_POST['dates']) : array();
-    $times = isset($_POST['times']) && is_array($_POST['times']) ? wp_unslash($_POST['times']) : array();
+    $times = tnmp_submitted_times();
     $duration = isset($_POST['duration']) ? wp_unslash($_POST['duration']) : '';
     $old_slots = tnmp_get_slots($poll_id);
     $old_attendees = tnmp_get_attendees($poll_id);

@@ -82,15 +82,29 @@
   var dates = document.getElementById('tnmp-dates');
   if (dates) {
     var duration = document.querySelector('input[name="duration"]');
+    var resetTimeRow = function (row) {
+      row.querySelectorAll('select').forEach(function (select) {
+        select.value = '';
+        select.querySelectorAll('option[data-legacy]').forEach(function (option) { option.remove(); });
+      });
+    };
     var updateTimeBounds = function () {
       if (dates.dataset.editing === '1') return;
       var earliest = Number(dates.dataset.earliest) * 60;
       var latest = Number(dates.dataset.latest) * 60 - Number(duration.value || 0);
-      var minimum = String(Math.floor(earliest / 60)).padStart(2, '0') + ':' + String(earliest % 60).padStart(2, '0');
-      var maximum = String(Math.max(0, Math.floor(latest / 60))).padStart(2, '0') + ':' + String(Math.max(0, latest % 60)).padStart(2, '0');
-      dates.querySelectorAll('input[type="time"]').forEach(function (input) {
-        input.min = minimum;
-        input.max = maximum;
+      dates.querySelectorAll('.tnmp-time-row').forEach(function (row) {
+        var hour = row.querySelector('.tnmp-time-hour');
+        var minute = row.querySelector('.tnmp-time-minute');
+        hour.querySelectorAll('option').forEach(function (option) {
+          if (!option.value) return;
+          var start = Number(option.value) * 60;
+          option.disabled = start > latest || start + 50 < earliest;
+        });
+        minute.querySelectorAll('option').forEach(function (option) {
+          if (!option.value) return;
+          var start = Number(hour.value) * 60 + Number(option.value);
+          option.disabled = !!hour.value && (start < earliest || start > latest);
+        });
       });
     };
     var updateSlotButtons = function () {
@@ -106,7 +120,7 @@
         var timeGroup = timeRow.closest('.tnmp-date-group');
         if (timeGroup.querySelectorAll('.tnmp-time-row').length > 1) timeRow.remove();
         else if (dates.children.length > 1) timeGroup.remove();
-        else timeRow.querySelector('input[type="time"]').value = '';
+        else resetTimeRow(timeRow);
         updateSlotButtons();
         return;
       }
@@ -118,7 +132,7 @@
           dateGroup.querySelector('input[type="date"]').value = '';
           dateGroup.querySelectorAll('.tnmp-time-row').forEach(function (row, index) {
             if (index > 0) row.remove();
-            else row.querySelector('input[type="time"]').value = '';
+            else resetTimeRow(row);
           });
         }
         updateSlotButtons();
@@ -128,7 +142,7 @@
       if (!button || dates.querySelectorAll('.tnmp-time-row').length >= 10) return;
       var group = button.closest('.tnmp-date-group');
       var row = group.querySelector('.tnmp-time-row').cloneNode(true);
-      row.querySelector('input[type="time"]').value = '';
+      resetTimeRow(row);
       var closed = row.querySelector('.tnmp-closed');
       if (closed) closed.remove();
       group.querySelector('.tnmp-times').appendChild(row);
@@ -144,10 +158,10 @@
       group.querySelectorAll('.tnmp-time-row').forEach(function (row, position) {
         if (position > 0) row.remove();
       });
-      group.querySelectorAll('input').forEach(function (input) {
+      group.querySelectorAll('input, select').forEach(function (input) {
         input.name = input.name.replace(/\[\d+\]/, '[' + index + ']');
       });
-      group.querySelector('input[type="time"]').value = '';
+      resetTimeRow(group.querySelector('.tnmp-time-row'));
       var closed = group.querySelector('.tnmp-closed');
       if (closed) closed.remove();
       dates.appendChild(group);
@@ -155,6 +169,9 @@
       updateSlotButtons();
     });
     if (duration) duration.addEventListener('input', updateTimeBounds);
+    dates.addEventListener('change', function (event) {
+      if (event.target.matches('.tnmp-time-hour')) updateTimeBounds();
+    });
     updateTimeBounds();
     updateSlotButtons();
   }

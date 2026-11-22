@@ -216,7 +216,23 @@ function tnmp_date_group($index, $date = '', $items = array()) {
 }
 
 function tnmp_time_row($index, $time = '', $closed = false) {
-    echo '<div class="tnmp-row tnmp-time-row"><label>Start <input type="time" name="times[' . (int) $index . '][]" step="600" value="' . esc_attr($time) . '" required></label>';
+    $selected_hour = $time !== '' ? substr($time, 0, 2) : '';
+    $selected_minute = $time !== '' ? substr($time, 3, 2) : '';
+    echo '<div class="tnmp-row tnmp-time-row"><label>Start hour <select class="tnmp-time-hour" name="time_hours[' . (int) $index . '][]" required><option value="">Hour</option>';
+    for ($hour = 0; $hour < 24; $hour++) {
+        $value = sprintf('%02d', $hour);
+        $label = sprintf('%02d', $hour % 12 ?: 12) . ($hour < 12 ? ' am' : ' pm');
+        echo '<option value="' . esc_attr($value) . '"' . ($value === $selected_hour ? ' selected' : '') . '>' . esc_html($label) . '</option>';
+    }
+    echo '</select></label><label>Minutes <select class="tnmp-time-minute" name="time_minutes[' . (int) $index . '][]" required><option value="">Min</option>';
+    for ($minute = 0; $minute < 60; $minute += 10) {
+        $value = sprintf('%02d', $minute);
+        echo '<option value="' . esc_attr($value) . '"' . ($value === $selected_minute ? ' selected' : '') . '>' . esc_html($value) . '</option>';
+    }
+    if ($selected_minute !== '' && (int) $selected_minute % 10 !== 0) {
+        echo '<option value="' . esc_attr($selected_minute) . '" selected data-legacy="1">' . esc_html($selected_minute) . ' (existing)</option>';
+    }
+    echo '</select></label>';
     if ($closed) { echo '<span class="tnmp-closed">Closed</span>'; }
     echo '<button type="button" class="button tnmp-remove-time">Remove time</button></div>';
 }
@@ -349,13 +365,14 @@ function tnmp_render_vote_page($poll, $attendee, $message = '') {
         }
         $durations = array_values(array_unique($durations));
         sort($durations);
-        echo '<header class="tnmp-vote-header"><p class="tnmp-eyebrow">Scheduling poll</p><span class="tnmp-version" aria-label="' . esc_attr('Version ' . TNMP_VERSION) . '">v' . esc_html(TNMP_VERSION) . '</span><h1>' . esc_html($poll->title) . '</h1></header>';
+        echo '<header class="tnmp-vote-header"><h1>' . esc_html($poll->title) . '</h1></header>';
         if ($poll->description !== '') { echo '<p>' . nl2br(esc_html($poll->description)) . '</p>'; }
         if ($durations) { echo '<p class="tnmp-vote-duration">Meeting duration' . (count($durations) > 1 ? 's' : '') . ': ' . esc_html(implode(', ', $durations)) . ' minutes</p>'; }
-        echo '<p class="tnmp-muted">Voting as ' . esc_html($attendee->email) . ' · Times shown in ' . esc_html($poll->timezone) . '</p>';
+        $voter_meta = '<p class="tnmp-muted tnmp-voter-meta">Voting as ' . esc_html($attendee->email) . ' · Times shown in ' . esc_html($poll->timezone) . '</p>';
+        if ($verified || $poll->status !== 'open') { echo $voter_meta; }
         if ($message !== '') { echo '<div class="tnmp-notice" role="status">' . esc_html($message) . '</div>'; }
         if (!$verified && $poll->status === 'open') {
-            echo '<section class="tnmp-card"><h2>Verify yourself to vote</h2><div class="tnmp-verify-row">';
+            echo '<section class="tnmp-card">' . $voter_meta . '<h2>Verify yourself to vote</h2><div class="tnmp-verify-row">';
             echo '<form method="post">';
             echo '<input type="hidden" name="tnmp_action" value="send_code">';
             echo '<input type="hidden" name="_tnmp_nonce" value="' . esc_attr(wp_create_nonce('tnmp_vote_' . $attendee->id)) . '">';

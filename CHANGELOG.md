@@ -2,6 +2,12 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.10 - 2026-11-22
+
+- Offer explicit 10-minute start choices so the browser cannot insert its current minute.
+- Move voter details into the verification card before voting.
+- Remove the Scheduling poll label and version from the public voting page.
+
 ## 0.1.9 - 2026-11-22
 
 - Make the voting page use identity verification wording and a single-row code entry.
