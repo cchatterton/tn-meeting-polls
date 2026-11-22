@@ -79,8 +79,10 @@
 .tnmp-code-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 0.625rem; margin-top: 1.125rem; }
 .tnmp-code-form label { font-weight: 600; }
 .tnmp-code-form input { display: block; margin-top: 0.3125rem; padding: 0.5rem; font-size: 1.125rem; width: 9.375rem; }
-.tnmp-vote-slot { border-bottom: 0.0625rem solid #d5dfe5; padding: 1.0625rem 0; }
-.tnmp-vote-slot h3 { margin: 0 0 0.125rem; }
+.tnmp-vote-day { margin-top: 1.5rem; }
+.tnmp-vote-day > h3 { margin: 0 0 0.25rem; font-size: 1.25rem; }
+.tnmp-vote-slot { border-bottom: 0.0625rem solid #d5dfe5; padding: 0.75rem 0 1.0625rem; }
+.tnmp-vote-slot h4 { margin: 0 0 0.125rem; font-size: 1.125rem; }
 .tnmp-vote-slot p { margin: 0.1875rem 0 0.75rem; }
 .tnmp-vote-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5625rem; }
 .tnmp-vote-options form, .tnmp-vote-options div { text-align: center; }

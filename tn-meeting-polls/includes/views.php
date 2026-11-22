@@ -364,8 +364,19 @@ function tnmp_render_vote_page($poll, $attendee, $message = '') {
             $counts[$vote->slot_id][$vote->choice] = ($counts[$vote->slot_id][$vote->choice] ?? 0) + 1;
             if ((int) $vote->attendee_id === (int) $attendee->id) { $mine[$vote->slot_id] = $vote->choice; }
         }
+        $current_day = '';
+        $vote_timezone = new DateTimeZone($poll->timezone);
         foreach (tnmp_get_slots($poll->id) as $slot) {
-            echo '<section class="tnmp-vote-slot"><h3>' . esc_html(tnmp_format_time($slot->starts_at, $poll->timezone)) . '</h3><p class="tnmp-muted">Until ' . esc_html(tnmp_format_time($slot->ends_at, $poll->timezone)) . '</p>';
+            $start = (new DateTimeImmutable($slot->starts_at, new DateTimeZone('UTC')))->setTimezone($vote_timezone);
+            $end = (new DateTimeImmutable($slot->ends_at, new DateTimeZone('UTC')))->setTimezone($vote_timezone);
+            $day = $start->format('Y-m-d');
+            if ($day !== $current_day) {
+                if ($current_day !== '') { echo '</section>'; }
+                $current_day = $day;
+                echo '<section class="tnmp-vote-day" aria-labelledby="tnmp-day-' . esc_attr($day) . '"><h3 id="tnmp-day-' . esc_attr($day) . '">' . esc_html($start->format('D j M Y')) . '</h3>';
+            }
+            $until = $end->format('Y-m-d') === $day ? $end->format('g:i A') : $end->format('D j M Y, g:i A');
+            echo '<div class="tnmp-vote-slot"><h4>' . esc_html($start->format('g:i A')) . '</h4><p class="tnmp-muted">Until ' . esc_html($until) . '</p>';
             if ($slot->status === 'closed') { echo '<p class="tnmp-closed">This time is closed.</p>'; }
             echo '<div class="tnmp-vote-options">';
             foreach (array('prefer' => '♡ Prefer', 'yes' => '✓ Yes', 'no' => '× No') as $choice => $label) {
@@ -377,8 +388,9 @@ function tnmp_render_vote_page($poll, $attendee, $message = '') {
                     echo '<div><span class="tnmp-choice' . (($mine[$slot->id] ?? '') === $choice ? ' is-selected' : '') . '">' . esc_html($label) . '</span><small>' . (int) ($counts[$slot->id][$choice] ?? 0) . ' vote(s)</small></div>';
                 }
             }
-            echo '</div></section>';
+            echo '</div></div>';
         }
+        if ($current_day !== '') { echo '</section>'; }
         if ($attendee->holds) { echo '<p class="tnmp-muted">Voting No cancels your calendar placeholder for that time. You can change your vote while the poll is open.</p>'; }
     }
     ?></main><?php wp_footer(); ?></body></html><?php

@@ -2,6 +2,10 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.8 - 2026-11-22
+
+- Group attendee voting choices under one heading per local date, with individual times and votes below it.
+
 ## 0.1.7 - 2026-11-22
 
 - Edit open polls from the first tab with current dates, times and invitees prefilled.
