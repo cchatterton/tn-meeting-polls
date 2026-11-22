@@ -54,9 +54,10 @@ body.toplevel_page_tn-meeting-polls #wpwrap, body.toplevel_page_tn-meeting-polls
 .tnmp-contact-match { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5rem; border-bottom: 0.0625rem solid var(--tnmp-border); }
 .tnmp-contact-match[hidden] { display: none; }
 .tnmp-contact-match small { display: block; color: var(--tnmp-muted); }
-.tnmp-contact-table { min-width: 44rem; table-layout: fixed; }
+.tnmp-contact-table { min-width: 56rem; table-layout: fixed; }
 .tnmp-contact-table th:first-child { width: 4rem; }
-.tnmp-contact-table th:nth-child(2), .tnmp-contact-table th:nth-child(3) { width: 34%; }
+.tnmp-contact-table th:nth-child(2), .tnmp-contact-table th:nth-child(3) { width: 26%; }
+.tnmp-contact-table th:nth-child(4) { width: 9rem; }
 .tnmp-contact-toolbar { display: flex; gap: 0.5rem; align-items: center; }
 .tnmp-contact-dialog { width: min(36rem, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); padding: 1.5rem; border: 0.0625rem solid var(--tnmp-border); border-radius: 0.5rem; box-shadow: 0 1rem 3rem rgba(0, 20, 35, 0.22); color: var(--tnmp-ink); }
 .tnmp-contact-dialog::backdrop { background: rgba(0, 20, 35, 0.55); }
@@ -64,6 +65,7 @@ body.toplevel_page_tn-meeting-polls #wpwrap, body.toplevel_page_tn-meeting-polls
 .tnmp-contact-dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 .tnmp-template-fields label { display: block; margin-bottom: 0.75rem; font-weight: 600; }
 .tnmp-template-fields input, .tnmp-template-fields textarea { display: block; width: 100%; margin-top: 0.25rem; font-weight: 400; }
+.tnmp-template-fields .tnmp-contact-hold-label input { display: inline-block; width: auto; margin: 0 0.3rem 0 0; }
 .tnmp-template-table { min-width: 42rem; }
 .tnmp-template-table th:nth-child(1) { width: 22%; }
 .tnmp-template-table th:nth-child(3) { width: 7rem; }

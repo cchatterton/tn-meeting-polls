@@ -100,6 +100,7 @@ function tnmp_install_tables() {
         organiser_id bigint(20) unsigned NOT NULL,
         name varchar(190) NOT NULL,
         email varchar(190) NOT NULL,
+        hold_default tinyint(1) NOT NULL DEFAULT 0,
         PRIMARY KEY  (id),
         UNIQUE KEY organiser_email (organiser_id,email),
         KEY organiser_name (organiser_id,name)
@@ -139,12 +140,12 @@ function tnmp_user_settings($user_id) {
 
 function tnmp_get_contacts($user_id) {
     global $wpdb;
-    return $wpdb->get_results($wpdb->prepare('SELECT id, name, email FROM ' . tnmp_table('contacts') . ' WHERE organiser_id = %d ORDER BY name ASC, email ASC', $user_id));
+    return $wpdb->get_results($wpdb->prepare('SELECT id, name, email, hold_default FROM ' . tnmp_table('contacts') . ' WHERE organiser_id = %d ORDER BY name ASC, email ASC', $user_id));
 }
 
 function tnmp_get_contact($id, $user_id) {
     global $wpdb;
-    return $wpdb->get_row($wpdb->prepare('SELECT id, name, email FROM ' . tnmp_table('contacts') . ' WHERE id = %d AND organiser_id = %d', $id, $user_id));
+    return $wpdb->get_row($wpdb->prepare('SELECT id, name, email, hold_default FROM ' . tnmp_table('contacts') . ' WHERE id = %d AND organiser_id = %d', $id, $user_id));
 }
 
 function tnmp_get_templates($user_id) {

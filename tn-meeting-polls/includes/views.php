@@ -132,7 +132,7 @@ function tnmp_render_create_form($poll = null) {
         }
         foreach ($contacts as $contact) {
             if (isset($selected_ids[(int) $contact->id])) {
-                $poll_attendees[] = (object) array('name' => $contact->name, 'email' => $contact->email, 'holds' => 0);
+                $poll_attendees[] = (object) array('name' => $contact->name, 'email' => $contact->email, 'holds' => (int) $contact->hold_default);
             }
         }
     }
@@ -169,7 +169,7 @@ function tnmp_render_create_form($poll = null) {
         echo '<div class="tnmp-contact-picker"><label for="tnmp-contact-search">Find a contact</label><input id="tnmp-contact-search" type="search" autocomplete="off" placeholder="Type a name or email" aria-controls="tnmp-contact-matches">';
         echo '<div id="tnmp-contact-matches" class="tnmp-contact-matches" aria-live="polite">';
         foreach ($contacts as $contact) {
-            echo '<div class="tnmp-contact-match" data-name="' . esc_attr($contact->name) . '" data-email="' . esc_attr($contact->email) . '" hidden><span>' . esc_html($contact->name) . ' <small>' . esc_html($contact->email) . '</small></span><button type="button" class="button tnmp-pick-contact">Add</button></div>';
+            echo '<div class="tnmp-contact-match" data-name="' . esc_attr($contact->name) . '" data-email="' . esc_attr($contact->email) . '" data-hold-default="' . (int) $contact->hold_default . '" hidden><span>' . esc_html($contact->name) . ' <small>' . esc_html($contact->email) . '</small></span><button type="button" class="button tnmp-pick-contact">Add</button></div>';
         }
         echo '</div></div>';
     } else {
@@ -213,16 +213,19 @@ function tnmp_render_contacts() {
     echo '<dialog id="tnmp-contact-dialog" class="tnmp-contact-dialog" aria-labelledby="tnmp-contact-dialog-title"><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="add"><input type="hidden" name="contact_id" value="0">';
     wp_nonce_field('tnmp_contact');
     tnmp_return_field();
-    echo '<h3 id="tnmp-contact-dialog-title">Add contact</h3><div class="tnmp-template-fields"><label>Name <input type="text" name="name" maxlength="190" required></label><label>Email <input type="email" name="email" maxlength="190" required></label></div><div class="tnmp-contact-dialog-actions"><button type="button" class="button" id="tnmp-close-contact-dialog">Cancel</button><button type="submit" class="button button-primary" id="tnmp-save-contact">Add contact</button></div></form></dialog>';
+    echo '<h3 id="tnmp-contact-dialog-title">Add contact</h3><div class="tnmp-template-fields"><label>Name <input type="text" name="name" maxlength="190" required></label><label>Email <input type="email" name="email" maxlength="190" required></label><label class="tnmp-contact-hold-label"><input type="checkbox" name="hold_default" value="1"> Send Placeholder</label></div><div class="tnmp-contact-dialog-actions"><button type="button" class="button" id="tnmp-close-contact-dialog">Cancel</button><button type="submit" class="button button-primary" id="tnmp-save-contact">Add contact</button></div></form></dialog>';
     if (!$contacts) { echo '<p>No contacts yet.</p><button type="button" class="button button-primary" id="tnmp-open-contact-dialog">Add Contact</button>'; return; }
     echo '<form id="tnmp-invite-selected" method="get" action="' . esc_url(is_admin() ? admin_url('admin.php') : get_permalink()) . '">';
     if (is_admin()) { echo '<input type="hidden" name="page" value="tn-meeting-polls">'; }
     echo '<input type="hidden" name="tnmp_view" value="create"></form>';
-    echo '<div class="tnmp-scroll"><table class="tnmp-table tnmp-record-table tnmp-contact-table"><thead><tr><th scope="col">Select</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Actions</th></tr></thead><tbody>';
+    echo '<div class="tnmp-scroll"><table class="tnmp-table tnmp-record-table tnmp-contact-table"><thead><tr><th scope="col">Select</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Send Placeholder</th><th scope="col">Actions</th></tr></thead><tbody>';
     foreach ($contacts as $contact) {
         echo '<tr><td><label class="tnmp-visually-hidden" for="tnmp-select-contact-' . (int) $contact->id . '">Select ' . esc_html($contact->name) . '</label><input id="tnmp-select-contact-' . (int) $contact->id . '" form="tnmp-invite-selected" type="checkbox" name="tnmp_contacts[]" value="' . (int) $contact->id . '"></td>';
-        echo '<td>' . esc_html($contact->name) . '</td><td>' . esc_html($contact->email) . '</td><td><div class="tnmp-record-actions">';
-        echo '<button type="button" class="button tnmp-edit-contact" data-contact-id="' . (int) $contact->id . '" data-contact-name="' . esc_attr($contact->name) . '" data-contact-email="' . esc_attr($contact->email) . '">Edit</button>';
+        echo '<td>' . esc_html($contact->name) . '</td><td>' . esc_html($contact->email) . '</td><td><form class="tnmp-contact-default-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="preference"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
+        wp_nonce_field('tnmp_contact');
+        tnmp_return_field();
+        echo '<label class="tnmp-visually-hidden" for="tnmp-hold-contact-' . (int) $contact->id . '">Send Placeholder for ' . esc_html($contact->name) . '</label><input id="tnmp-hold-contact-' . (int) $contact->id . '" type="checkbox" name="hold_default" value="1"' . checked((int) $contact->hold_default, 1, false) . '><button type="submit" class="tnmp-visually-hidden">Save placeholder default</button></form></td><td><div class="tnmp-record-actions">';
+        echo '<button type="button" class="button tnmp-edit-contact" data-contact-id="' . (int) $contact->id . '" data-contact-name="' . esc_attr($contact->name) . '" data-contact-email="' . esc_attr($contact->email) . '" data-contact-hold-default="' . (int) $contact->hold_default . '">Edit</button>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="delete"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
         wp_nonce_field('tnmp_contact');
         tnmp_return_field();
@@ -251,7 +254,7 @@ function tnmp_render_templates() {
         wp_nonce_field('tnmp_template');
         tnmp_return_field();
         echo '<button type="submit" class="button tnmp-remove-contact">Delete</button></form>';
-        echo '<a class="button" href="' . esc_url(add_query_arg('tnmp_template', (int) $template->id, tnmp_view_url('create'))) . '">Open</a></div></td></tr>';
+        echo '<a class="button" href="' . esc_url(add_query_arg('tnmp_template', (int) $template->id, tnmp_view_url('create'))) . '">Use</a></div></td></tr>';
     }
     echo '</tbody></table></div><p class="tnmp-submit"><button type="button" class="button button-primary" id="tnmp-add-template">Add template</button></p>';
 }

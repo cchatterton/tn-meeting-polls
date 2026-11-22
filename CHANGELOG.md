@@ -2,6 +2,11 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.21 - 2026-11-23
+
+- Rename the template action from Open to Use.
+- Add a Send Placeholder checkbox to each contact and apply its saved default when that contact is invited to a new poll.
+
 ## 0.1.20 - 2026-11-22
 
 - Remove the five-minute future cutoff from poll creation and editing.

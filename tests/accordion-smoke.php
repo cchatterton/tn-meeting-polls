@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/accordion-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.20');
+define('TNMP_VERSION', '0.1.21');
 function current_user_can($capability) { return true; }
 function get_current_user_id() { return 7; }
 function esc_html($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }

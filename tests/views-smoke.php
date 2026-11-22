@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/views-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.20');
+define('TNMP_VERSION', '0.1.21');
 function current_user_can($capability) { return true; }
 function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower($value)); }
 function wp_unslash($value) { return $value; }
@@ -15,6 +15,7 @@ function is_admin() { return true; }
 function wp_doing_ajax() { return false; }
 function wp_timezone_string() { return $GLOBALS['site_timezone'] ?? 'Australia/Sydney'; }
 function selected($actual, $expected, $echo) { return $actual === $expected ? ' selected' : ''; }
+function checked($actual, $expected, $echo) { return $actual === $expected ? ' checked' : ''; }
 function wp_nonce_field($action) { echo '<input type="hidden" value="nonce">'; }
 function get_current_user_id() { return 7; }
 function get_user_meta($id, $key, $single) { return $GLOBALS['user_settings'] ?? array(); }
@@ -27,7 +28,7 @@ class FakeDb {
         if (!empty($GLOBALS['edit_poll']) && strpos($query, 'tnmp_slots') !== false) { return $GLOBALS['edit_slots']; }
         if (!empty($GLOBALS['edit_poll']) && strpos($query, 'tnmp_attendees') !== false) { return $GLOBALS['edit_attendees']; }
         if (strpos($query, 'tnmp_contacts') !== false) {
-            return array((object) array('id' => 1, 'name' => 'Ada Lovelace', 'email' => 'ada@example.test'), (object) array('id' => 2, 'name' => 'Grace Hopper', 'email' => 'grace@example.test'));
+            return array((object) array('id' => 1, 'name' => 'Ada Lovelace', 'email' => 'ada@example.test', 'hold_default' => 1), (object) array('id' => 2, 'name' => 'Grace Hopper', 'email' => 'grace@example.test', 'hold_default' => 0));
         }
         if (strpos($query, 'tnmp_templates') !== false) {
             return array((object) array('id' => 5, 'title' => 'Planning template', 'description' => 'Review agenda', 'duration' => 75));
@@ -54,7 +55,7 @@ check_view(strpos($create, 'name="duration"') !== false && substr_count($create,
 check_view(strpos($create, 'name="duration"') < strpos($create, 'name="dates[0]"') && strpos($create, 'name="dates[0]"') < strpos($create, 'name="times[0][]"'), 'create fields follow duration, date, time order');
 check_view(strpos($create, 'name="times[0][]" step="600"') !== false, 'native start time picker is restored with 10-minute steps');
 check_view(substr_count($create, 'name="emails[]"') === 1, 'create view starts with one attendee slot');
-check_view(strpos($create, 'id="tnmp-contact-search"') !== false && strpos($create, 'data-email="ada@example.test"') !== false && strpos($create, 'tnmp-pick-contact') !== false, 'create form offers searchable saved contacts');
+check_view(strpos($create, 'id="tnmp-contact-search"') !== false && strpos($create, 'data-email="ada@example.test" data-hold-default="1"') !== false && strpos($create, 'tnmp-pick-contact') !== false, 'create form offers searchable saved contacts with their placeholder defaults');
 check_view(strpos($create, 'data-earliest="0" data-latest="24"') !== false, 'create form preserves unrestricted meeting hours until settings are saved');
 check_view(strpos($create, 'value="Australia/Sydney" selected') !== false, 'WordPress named timezone is selected by default');
 check_view(strpos($create, 'id="tnmp-results"') === false, 'create view has no live results');
@@ -76,18 +77,20 @@ check_view(strpos($contacts, 'Ada Lovelace') < strpos($contacts, 'Grace Hopper')
 check_view(strpos($contacts, 'tnmp-edit-contact') !== false && strpos($contacts, 'value="delete"') !== false && strpos($contacts, 'value="add"') !== false, 'contacts can be added, edited and removed');
 check_view(strpos($contacts, 'data-confirm') === false, 'removing a contact has no browser confirmation');
 check_view(strpos($contacts, '<table class="tnmp-table tnmp-record-table tnmp-contact-table">') !== false && substr_count($contacts, '<tbody><tr>') === 1 && substr_count($contacts, '</td></tr>') === 2, 'saved contacts are table rows');
-check_view((bool) preg_match('/<tr><td>.*?name="tnmp_contacts\[\]" value="1".*?<\/td><td>Ada Lovelace<\/td><td>ada@example\.test<\/td><td>.*?data-contact-id="1".*?Edit<\/button>.*?Delete<\/button>.*?<\/td><\/tr>/s', $contacts), 'contact records show values and actions in one row');
+check_view((bool) preg_match('/<tr><td>.*?name="tnmp_contacts\[\]" value="1".*?<\/td><td>Ada Lovelace<\/td><td>ada@example\.test<\/td><td>.*?name="hold_default" value="1" checked.*?<\/td><td>.*?data-contact-id="1".*?Edit<\/button>.*?Delete<\/button>.*?<\/td><\/tr>/s', $contacts), 'contact records show values, placeholder default and actions in one row');
 check_view(strpos($contacts, 'id="tnmp-invite-selected"') !== false && strpos($contacts, 'form="tnmp-invite-selected" class="button button-primary">Invite selected</button>') !== false, 'selected contacts can open create poll');
 check_view(strpos($contacts, '<dialog id="tnmp-contact-dialog"') !== false && strpos($contacts, 'id="tnmp-open-contact-dialog">Add Contact</button>') !== false && strpos($contacts, 'name="operation" value="add"') !== false && strpos($contacts, 'name="contact_id" value="0"') !== false, 'add and edit contact use one modal');
+check_view(strpos($contacts, '<th scope="col">Send Placeholder</th>') !== false && strpos($contacts, 'data-contact-hold-default="1"') !== false && strpos($contacts, 'data-contact-hold-default="0"') !== false, 'contact placeholder defaults appear in table and edit data');
 $_GET['tnmp_view'] = 'create';
 $_GET['tnmp_contacts'] = array('2', '1', '1', '999');
 $selected_create = tnmp_render_app();
 check_view(substr_count($selected_create, 'class="tnmp-row tnmp-attendee-row"') === 2 && strpos($selected_create, 'value="ada@example.test"') !== false && strpos($selected_create, 'value="grace@example.test"') !== false, 'selected saved contacts prefill create poll without duplicates or unknown IDs');
+check_view((bool) preg_match('/value="ada@example\.test".*?name="holds\[0\]" value="1" checked/s', $selected_create) && (bool) preg_match('/value="grace@example\.test".*?name="holds\[1\]" value="1">/s', $selected_create), 'selected contacts keep their own placeholder defaults');
 unset($_GET['tnmp_contacts']);
 $_GET['tnmp_view'] = 'templates';
 $templates = tnmp_render_app();
 check_view(strpos($templates, '<h2>Templates</h2>') !== false && strpos($templates, 'Planning template') !== false && strpos($templates, 'Review agenda') !== false && strpos($templates, '75 mins') !== false, 'templates table shows saved values');
-check_view(strpos($templates, 'data-template-id="5"') !== false && strpos($templates, 'value="delete"') !== false && strpos($templates, 'tnmp_template=5') !== false && strpos($templates, '<dialog id="tnmp-template-dialog"') !== false, 'template actions include edit, delete, open and modal');
+check_view(strpos($templates, 'data-template-id="5"') !== false && strpos($templates, 'value="delete"') !== false && strpos($templates, 'tnmp_template=5') !== false && strpos($templates, '>Use</a>') !== false && strpos($templates, '<dialog id="tnmp-template-dialog"') !== false, 'template actions include edit, delete, use and modal');
 $_GET['tnmp_view'] = 'create';
 $_GET['tnmp_template'] = 5;
 $template_create = tnmp_render_app();

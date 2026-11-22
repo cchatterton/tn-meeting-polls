@@ -144,6 +144,11 @@ function tnmp_contact_action() {
         $wpdb->delete(tnmp_table('contacts'), array('id' => $id, 'organiser_id' => $user_id));
         tnmp_redirect('contact_deleted');
     }
+    if ($operation === 'preference') {
+        if (!$existing) { tnmp_redirect('contact_invalid'); }
+        $saved = $wpdb->update(tnmp_table('contacts'), array('hold_default' => !empty($_POST['hold_default']) ? 1 : 0), array('id' => $id, 'organiser_id' => $user_id));
+        tnmp_redirect($saved === false ? 'contact_invalid' : 'contact_default_saved');
+    }
     if (!in_array($operation, array('add', 'edit'), true) || ($operation === 'edit' && !$existing)) {
         tnmp_redirect('contact_invalid');
     }
@@ -152,7 +157,7 @@ function tnmp_contact_action() {
     if ($name === '' || strlen($name) > 190 || !is_email($email) || strlen($email) > 190) {
         tnmp_redirect('contact_invalid');
     }
-    $data = array('name' => $name, 'email' => $email);
+    $data = array('name' => $name, 'email' => $email, 'hold_default' => !empty($_POST['hold_default']) ? 1 : 0);
     $saved = $operation === 'add'
         ? $wpdb->insert(tnmp_table('contacts'), array_merge(array('organiser_id' => $user_id), $data))
         : $wpdb->update(tnmp_table('contacts'), $data, array('id' => $id, 'organiser_id' => $user_id));

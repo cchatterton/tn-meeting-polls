@@ -35,6 +35,7 @@
     var contactId = contactForm.querySelector('input[name="contact_id"]');
     var contactName = contactForm.querySelector('input[name="name"]');
     var contactEmail = contactForm.querySelector('input[name="email"]');
+    var contactHoldDefault = contactForm.querySelector('input[name="hold_default"]');
     var contactTitle = contactDialog.querySelector('#tnmp-contact-dialog-title');
     var contactSubmit = contactDialog.querySelector('#tnmp-save-contact');
     openContactDialog.addEventListener('click', function () {
@@ -42,6 +43,7 @@
       contactId.value = '0';
       contactName.value = '';
       contactEmail.value = '';
+      contactHoldDefault.checked = false;
       contactTitle.textContent = 'Add contact';
       contactSubmit.textContent = 'Add contact';
       contactDialog.showModal();
@@ -53,6 +55,7 @@
         contactId.value = button.dataset.contactId;
         contactName.value = button.dataset.contactName;
         contactEmail.value = button.dataset.contactEmail;
+        contactHoldDefault.checked = button.dataset.contactHoldDefault === '1';
         contactTitle.textContent = 'Edit contact';
         contactSubmit.textContent = 'Save contact';
         contactDialog.showModal();
@@ -61,6 +64,10 @@
     });
     closeContactDialog.addEventListener('click', function () { contactDialog.close(); });
   }
+
+  document.querySelectorAll('.tnmp-contact-default-form input[type="checkbox"]').forEach(function (checkbox) {
+    checkbox.addEventListener('change', function () { checkbox.form.requestSubmit(); });
+  });
 
   var templateDialog = document.getElementById('tnmp-template-dialog');
   var addTemplate = document.getElementById('tnmp-add-template');
@@ -140,6 +147,7 @@
       if (!row) return;
       row.querySelector('input[type="email"]').value = contact.dataset.email;
       row.querySelector('input[type="text"]').value = contact.dataset.name;
+      row.querySelector('input[type="checkbox"]').checked = contact.dataset.holdDefault === '1';
       contactSearch.value = '';
       filterContacts();
       row.querySelector('input[type="email"]').focus();
