@@ -26,13 +26,38 @@
     });
   });
 
-  var contactDialog = document.getElementById('tnmp-add-contact-dialog');
+  var contactDialog = document.getElementById('tnmp-contact-dialog');
   var openContactDialog = document.getElementById('tnmp-open-contact-dialog');
   var closeContactDialog = document.getElementById('tnmp-close-contact-dialog');
   if (contactDialog && openContactDialog && closeContactDialog) {
+    var contactForm = contactDialog.querySelector('form');
+    var contactOperation = contactForm.querySelector('input[name="operation"]');
+    var contactId = contactForm.querySelector('input[name="contact_id"]');
+    var contactName = contactForm.querySelector('input[name="name"]');
+    var contactEmail = contactForm.querySelector('input[name="email"]');
+    var contactTitle = contactDialog.querySelector('#tnmp-contact-dialog-title');
+    var contactSubmit = contactDialog.querySelector('#tnmp-save-contact');
     openContactDialog.addEventListener('click', function () {
+      contactOperation.value = 'add';
+      contactId.value = '0';
+      contactName.value = '';
+      contactEmail.value = '';
+      contactTitle.textContent = 'Add contact';
+      contactSubmit.textContent = 'Add contact';
       contactDialog.showModal();
-      contactDialog.querySelector('input[name="name"]').focus();
+      contactName.focus();
+    });
+    document.querySelectorAll('.tnmp-edit-contact').forEach(function (button) {
+      button.addEventListener('click', function () {
+        contactOperation.value = 'edit';
+        contactId.value = button.dataset.contactId;
+        contactName.value = button.dataset.contactName;
+        contactEmail.value = button.dataset.contactEmail;
+        contactTitle.textContent = 'Edit contact';
+        contactSubmit.textContent = 'Save contact';
+        contactDialog.showModal();
+        contactName.focus();
+      });
     });
     closeContactDialog.addEventListener('click', function () { contactDialog.close(); });
   }
@@ -55,7 +80,7 @@
       templateName.value = '';
       templateDescription.value = '';
       templateDuration.value = templateDialog.dataset.defaultDuration;
-      templateTitle.textContent = 'Add meeting template';
+      templateTitle.textContent = 'Add template';
       templateSubmit.textContent = 'Add template';
       templateDialog.showModal();
       templateName.focus();
@@ -67,7 +92,7 @@
         templateName.value = button.dataset.templateTitle;
         templateDescription.value = button.dataset.templateDescription;
         templateDuration.value = button.dataset.templateDuration;
-        templateTitle.textContent = 'Edit meeting template';
+        templateTitle.textContent = 'Edit template';
         templateSubmit.textContent = 'Save template';
         templateDialog.showModal();
         templateName.focus();
@@ -124,29 +149,15 @@
   var dates = document.getElementById('tnmp-dates');
   if (dates) {
     var duration = document.querySelector('input[name="duration"]');
-    var resetTimeRow = function (row) {
-      row.querySelectorAll('select').forEach(function (select) {
-        select.value = '';
-        select.querySelectorAll('option[data-legacy]').forEach(function (option) { option.remove(); });
-      });
-    };
     var updateTimeBounds = function () {
       if (dates.dataset.editing === '1') return;
       var earliest = Number(dates.dataset.earliest) * 60;
       var latest = Number(dates.dataset.latest) * 60 - Number(duration.value || 0);
-      dates.querySelectorAll('.tnmp-time-row').forEach(function (row) {
-        var hour = row.querySelector('.tnmp-time-hour');
-        var minute = row.querySelector('.tnmp-time-minute');
-        hour.querySelectorAll('option').forEach(function (option) {
-          if (!option.value) return;
-          var start = Number(option.value) * 60;
-          option.disabled = start > latest || start + 50 < earliest;
-        });
-        minute.querySelectorAll('option').forEach(function (option) {
-          if (!option.value) return;
-          var start = Number(hour.value) * 60 + Number(option.value);
-          option.disabled = !!hour.value && (start < earliest || start > latest);
-        });
+      var minimum = String(Math.floor(earliest / 60)).padStart(2, '0') + ':' + String(earliest % 60).padStart(2, '0');
+      var maximum = String(Math.max(0, Math.floor(latest / 60))).padStart(2, '0') + ':' + String(Math.max(0, latest % 60)).padStart(2, '0');
+      dates.querySelectorAll('input[type="time"]').forEach(function (input) {
+        input.min = minimum;
+        input.max = maximum;
       });
     };
     var updateSlotButtons = function () {
@@ -162,7 +173,7 @@
         var timeGroup = timeRow.closest('.tnmp-date-group');
         if (timeGroup.querySelectorAll('.tnmp-time-row').length > 1) timeRow.remove();
         else if (dates.children.length > 1) timeGroup.remove();
-        else resetTimeRow(timeRow);
+        else timeRow.querySelector('input[type="time"]').value = '';
         updateSlotButtons();
         return;
       }
@@ -174,7 +185,7 @@
           dateGroup.querySelector('input[type="date"]').value = '';
           dateGroup.querySelectorAll('.tnmp-time-row').forEach(function (row, index) {
             if (index > 0) row.remove();
-            else resetTimeRow(row);
+            else row.querySelector('input[type="time"]').value = '';
           });
         }
         updateSlotButtons();
@@ -184,7 +195,7 @@
       if (!button || dates.querySelectorAll('.tnmp-time-row').length >= 10) return;
       var group = button.closest('.tnmp-date-group');
       var row = group.querySelector('.tnmp-time-row').cloneNode(true);
-      resetTimeRow(row);
+      row.querySelector('input[type="time"]').value = '';
       var closed = row.querySelector('.tnmp-closed');
       if (closed) closed.remove();
       group.querySelector('.tnmp-times').appendChild(row);
@@ -200,10 +211,10 @@
       group.querySelectorAll('.tnmp-time-row').forEach(function (row, position) {
         if (position > 0) row.remove();
       });
-      group.querySelectorAll('input, select').forEach(function (input) {
+      group.querySelectorAll('input').forEach(function (input) {
         input.name = input.name.replace(/\[\d+\]/, '[' + index + ']');
       });
-      resetTimeRow(group.querySelector('.tnmp-time-row'));
+      group.querySelector('input[type="time"]').value = '';
       var closed = group.querySelector('.tnmp-closed');
       if (closed) closed.remove();
       dates.appendChild(group);
@@ -211,9 +222,6 @@
       updateSlotButtons();
     });
     if (duration) duration.addEventListener('input', updateTimeBounds);
-    dates.addEventListener('change', function (event) {
-      if (event.target.matches('.tnmp-time-hour')) updateTimeBounds();
-    });
     updateTimeBounds();
     updateSlotButtons();
   }

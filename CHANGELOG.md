@@ -2,6 +2,12 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.17 - 2026-11-22
+
+- Restore the original single browser time input while retaining 10-minute validation.
+- Make Contacts and Templates use matching record tables and Add/Edit modals.
+- Rename the Meeting templates tab to Templates.
+
 ## 0.1.16 - 2026-11-22
 
 - Add daily WP-Cron cleanup of historical polls using each organiser’s retention days since the poll’s last update. Existing polls receive a fresh retention window.

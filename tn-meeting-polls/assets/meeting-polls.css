@@ -41,8 +41,6 @@
 .tnmp-date-group > label { display: block; max-width: 18rem; font-weight: 600; margin-bottom: 0.75rem; }
 .tnmp-date-group > label input { display: block; width: 100%; margin-top: 0.25rem; }
 .tnmp-date-group .tnmp-row label { flex: 0 1 14rem; }
-.tnmp-date-group .tnmp-time-row label { flex: 0 1 8rem; min-width: 6rem; }
-.tnmp-time-row select { display: block; width: 100%; margin-top: 0.25rem; }
 .tnmp-row { display: flex; align-items: flex-end; gap: 0.75rem; margin: 0 0 0.625rem; flex-wrap: wrap; }
 .tnmp-row label { display: block; min-width: 11.25rem; flex: 1; font-weight: 600; }
 .tnmp-row input[type="text"], .tnmp-row input[type="email"], .tnmp-row input[type="time"] { width: 100%; margin-top: 0.25rem; }
@@ -54,13 +52,9 @@
 .tnmp-contact-match { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5rem; border-bottom: 0.0625rem solid var(--tnmp-border); }
 .tnmp-contact-match[hidden] { display: none; }
 .tnmp-contact-match small { display: block; color: var(--tnmp-muted); }
-.tnmp-contact-table { width: 100%; min-width: 44rem; table-layout: fixed; border-collapse: collapse; background: #fff; }
-.tnmp-contact-table th, .tnmp-contact-table td { padding: 0.625rem; border-bottom: 0.0625rem solid var(--tnmp-border); text-align: left; vertical-align: middle; }
+.tnmp-contact-table { min-width: 44rem; table-layout: fixed; }
 .tnmp-contact-table th:first-child { width: 4rem; }
 .tnmp-contact-table th:nth-child(2), .tnmp-contact-table th:nth-child(3) { width: 34%; }
-.tnmp-contact-table input[type="text"], .tnmp-contact-table input[type="email"] { width: 100%; }
-.tnmp-contact-actions { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
-.tnmp-contact-actions form { margin: 0; }
 .tnmp-contact-toolbar { display: flex; gap: 0.5rem; align-items: center; }
 .tnmp-contact-dialog { width: min(36rem, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); padding: 1.5rem; border: 0.0625rem solid var(--tnmp-border); border-radius: 0.5rem; box-shadow: 0 1rem 3rem rgba(0, 20, 35, 0.22); color: var(--tnmp-ink); }
 .tnmp-contact-dialog::backdrop { background: rgba(0, 20, 35, 0.55); }
@@ -72,8 +66,6 @@
 .tnmp-template-table th:nth-child(1) { width: 22%; }
 .tnmp-template-table th:nth-child(3) { width: 7rem; }
 .tnmp-template-table th:nth-child(4) { width: 14rem; }
-.tnmp-template-actions { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
-.tnmp-template-actions form { margin: 0; }
 .tnmp-remove-contact { color: #9b351f; }
 .tnmp-submit { margin: 1.375rem 0 0; }
 .tnmp-notice { border-left: 0.25rem solid #ff6b00; background: #f2f6f8; padding: 0.75rem 1rem; margin: 0.875rem 0; }
@@ -85,6 +77,10 @@
 .tnmp-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; }
 .tnmp-table th, .tnmp-table td { border-bottom: 0.0625rem solid #e1e8ee; padding: 0.625rem 0.5rem; text-align: left; vertical-align: top; }
 .tnmp-table th { white-space: nowrap; }
+.tnmp-record-table { background: #fff; }
+.tnmp-record-table th, .tnmp-record-table td { vertical-align: middle; }
+.tnmp-record-actions { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+.tnmp-record-actions form { margin: 0; }
 .tnmp-inline { display: inline-block; margin: 0 0.3125rem 0.3125rem 0; }
 .tnmp-cancel-row { display: flex; justify-content: flex-end; margin-top: 1rem; }
 .tnmp-cancel-row .tnmp-inline { margin: 0; }

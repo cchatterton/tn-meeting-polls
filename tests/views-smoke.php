@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/views-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.16');
+define('TNMP_VERSION', '0.1.17');
 function current_user_can($capability) { return true; }
 function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower($value)); }
 function wp_unslash($value) { return $value; }
@@ -50,15 +50,15 @@ function check_view($condition, $message) {
 
 $_GET['tnmp_view'] = 'create';
 $create = tnmp_render_app();
-check_view(strpos($create, 'name="duration"') !== false && substr_count($create, 'name="duration"') === 1 && strpos($create, 'name="dates[0]"') !== false && strpos($create, 'name="time_hours[0][]"') !== false && strpos($create, 'name="time_minutes[0][]"') !== false && strpos($create, 'name="durations[') === false, 'create view sets one duration before dates and times');
-check_view(strpos($create, 'name="duration"') < strpos($create, 'name="dates[0]"') && strpos($create, 'name="dates[0]"') < strpos($create, 'name="time_hours[0][]"'), 'create fields follow duration, date, time order');
-check_view(strpos($create, '<option value="00">00</option><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option>') !== false, 'minute picker offers only 10-minute steps');
+check_view(strpos($create, 'name="duration"') !== false && substr_count($create, 'name="duration"') === 1 && strpos($create, 'name="dates[0]"') !== false && strpos($create, 'name="times[0][]"') !== false && strpos($create, 'name="durations[') === false, 'create view sets one duration before dates and times');
+check_view(strpos($create, 'name="duration"') < strpos($create, 'name="dates[0]"') && strpos($create, 'name="dates[0]"') < strpos($create, 'name="times[0][]"'), 'create fields follow duration, date, time order');
+check_view(strpos($create, 'name="times[0][]" step="600"') !== false, 'native start time picker is restored with 10-minute steps');
 check_view(substr_count($create, 'name="emails[]"') === 1, 'create view starts with one attendee slot');
 check_view(strpos($create, 'id="tnmp-contact-search"') !== false && strpos($create, 'data-email="ada@example.test"') !== false && strpos($create, 'tnmp-pick-contact') !== false, 'create form offers searchable saved contacts');
 check_view(strpos($create, 'data-earliest="0" data-latest="24"') !== false, 'create form preserves unrestricted meeting hours until settings are saved');
 check_view(strpos($create, 'value="Australia/Sydney" selected') !== false, 'WordPress named timezone is selected by default');
 check_view(strpos($create, 'id="tnmp-results"') === false, 'create view has no live results');
-check_view(strpos($create, '>Create/Edit</a>') !== false && strpos($create, '>Open/In-Progress</a>') !== false && strpos($create, '>Contacts</a>') !== false && strpos($create, '>Meeting templates</a>') !== false, 'navigation uses updated tab names');
+check_view(strpos($create, '>Create/Edit</a>') !== false && strpos($create, '>Open/In-Progress</a>') !== false && strpos($create, '>Contacts</a>') !== false && strpos($create, '>Templates</a>') !== false, 'navigation uses requested tab names');
 $GLOBALS['site_timezone'] = '+10:00';
 $offset_create = tnmp_render_app();
 check_view(strpos($offset_create, 'value="+10:00" selected') !== false, 'WordPress UTC-offset timezone remains selectable and selected');
@@ -73,12 +73,12 @@ check_view(strpos($history, 'id="tnmp-results"') === false && strpos($wpdb->quer
 $_GET['tnmp_view'] = 'contacts';
 $contacts = tnmp_render_app();
 check_view(strpos($contacts, 'Ada Lovelace') < strpos($contacts, 'Grace Hopper') && strpos($wpdb->query, 'ORDER BY name ASC, email ASC') !== false, 'contacts are shown alphabetically');
-check_view(strpos($contacts, 'value="edit"') !== false && strpos($contacts, 'value="delete"') !== false && strpos($contacts, 'value="add"') !== false, 'contacts can be added, edited and removed');
+check_view(strpos($contacts, 'tnmp-edit-contact') !== false && strpos($contacts, 'value="delete"') !== false && strpos($contacts, 'value="add"') !== false, 'contacts can be added, edited and removed');
 check_view(strpos($contacts, 'data-confirm') === false, 'removing a contact has no browser confirmation');
-check_view(strpos($contacts, '<table class="tnmp-contact-table">') !== false && substr_count($contacts, '<tbody><tr>') === 1 && substr_count($contacts, '</td></tr>') === 2, 'saved contacts are table rows');
-check_view((bool) preg_match('/<tr><td>.*?name="tnmp_contacts\[\]" value="1".*?<\/td><td>.*?form="tnmp-edit-contact-1".*?<\/td><td>.*?form="tnmp-edit-contact-1".*?<\/td><td>.*?Save<\/button>.*?Remove<\/button>.*?<\/td><\/tr>/s', $contacts), 'checkbox, name, email, save and remove share one row');
+check_view(strpos($contacts, '<table class="tnmp-table tnmp-record-table tnmp-contact-table">') !== false && substr_count($contacts, '<tbody><tr>') === 1 && substr_count($contacts, '</td></tr>') === 2, 'saved contacts are table rows');
+check_view((bool) preg_match('/<tr><td>.*?name="tnmp_contacts\[\]" value="1".*?<\/td><td>Ada Lovelace<\/td><td>ada@example\.test<\/td><td>.*?data-contact-id="1".*?Edit<\/button>.*?Delete<\/button>.*?<\/td><\/tr>/s', $contacts), 'contact records show values and actions in one row');
 check_view(strpos($contacts, 'id="tnmp-invite-selected"') !== false && strpos($contacts, 'form="tnmp-invite-selected" class="button button-primary">Invite selected</button>') !== false, 'selected contacts can open create poll');
-check_view(strpos($contacts, '<dialog id="tnmp-add-contact-dialog"') !== false && strpos($contacts, 'id="tnmp-open-contact-dialog">Add Contact</button>') !== false, 'add contact form opens from the contacts toolbar');
+check_view(strpos($contacts, '<dialog id="tnmp-contact-dialog"') !== false && strpos($contacts, 'id="tnmp-open-contact-dialog">Add Contact</button>') !== false && strpos($contacts, 'name="operation" value="add"') !== false && strpos($contacts, 'name="contact_id" value="0"') !== false, 'add and edit contact use one modal');
 $_GET['tnmp_view'] = 'create';
 $_GET['tnmp_contacts'] = array('2', '1', '1', '999');
 $selected_create = tnmp_render_app();
@@ -86,7 +86,7 @@ check_view(substr_count($selected_create, 'class="tnmp-row tnmp-attendee-row"') 
 unset($_GET['tnmp_contacts']);
 $_GET['tnmp_view'] = 'templates';
 $templates = tnmp_render_app();
-check_view(strpos($templates, '<h2>Meeting templates</h2>') !== false && strpos($templates, 'Planning template') !== false && strpos($templates, 'Review agenda') !== false && strpos($templates, '75 mins') !== false, 'meeting templates table shows saved values');
+check_view(strpos($templates, '<h2>Templates</h2>') !== false && strpos($templates, 'Planning template') !== false && strpos($templates, 'Review agenda') !== false && strpos($templates, '75 mins') !== false, 'templates table shows saved values');
 check_view(strpos($templates, 'data-template-id="5"') !== false && strpos($templates, 'value="delete"') !== false && strpos($templates, 'tnmp_template=5') !== false && strpos($templates, '<dialog id="tnmp-template-dialog"') !== false, 'template actions include edit, delete, open and modal');
 $_GET['tnmp_view'] = 'create';
 $_GET['tnmp_template'] = 5;
@@ -110,7 +110,7 @@ $GLOBALS['edit_attendees'] = array((object) array('id' => 8, 'email' => 'ada@exa
 $_GET['tnmp_edit'] = 42;
 $edit = tnmp_render_app();
 check_view(strpos($edit, 'Edit meeting poll') !== false && strpos($edit, 'name="action" value="tnmp_edit"') !== false && strpos($edit, 'name="poll_id" value="42"') !== false, 'edit opens create tab with authorised poll');
-check_view(strpos($edit, 'value="Planning"') !== false && strpos($edit, 'value="2026-11-25"') !== false && strpos($edit, '<option value="20" selected>08 pm</option>') !== false && strpos($edit, '<option value="00" selected>00</option>') !== false && strpos($edit, 'value="ada@example.test"') !== false, 'edit form preloads title, local time, and attendee');
+check_view(strpos($edit, 'value="Planning"') !== false && strpos($edit, 'value="2026-11-25"') !== false && strpos($edit, 'value="20:00"') !== false && strpos($edit, 'value="ada@example.test"') !== false, 'edit form preloads title, local time, and attendee');
 check_view(strpos($edit, 'tnmp-remove-time') !== false && strpos($edit, 'tnmp-remove-attendee') !== false && strpos($edit, 'Save poll and send updates') !== false, 'edit form allows changes and submission');
 unset($_GET['tnmp_edit']);
 echo "Poll views and creation fields passed.\n";
