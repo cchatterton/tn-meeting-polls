@@ -9,7 +9,9 @@ function tnmp_return_url() {
 }
 
 function tnmp_redirect($code, $poll_id = 0) {
+    $view = in_array($code, array('finalized', 'cancelled'), true) ? 'history' : ($code === 'created' ? 'open' : '');
     $url = add_query_arg(array('tnmp_notice' => $code, 'tnmp_poll' => (int) $poll_id), tnmp_return_url());
+    if ($view !== '') { $url = add_query_arg('tnmp_view', $view, $url); }
     wp_safe_redirect($url);
     exit;
 }
@@ -26,6 +28,33 @@ function tnmp_parse_local_datetime($value, $timezone) {
     }
 }
 
+function tnmp_parse_proposed_slots($dates, $times, $durations, $timezone) {
+    if (!is_array($dates) || !is_array($times) || !is_array($durations) || !$dates || count($dates) > 10 || count($dates) !== count($times) || count($dates) !== count($durations) || array_diff_key($dates, $times) || array_diff_key($dates, $durations)) {
+        return false;
+    }
+    $slots = array();
+    $seen = array();
+    foreach ($dates as $index => $date) {
+        if (!is_string($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date) || !is_array($times[$index]) || !is_array($durations[$index]) || !$times[$index] || count($times[$index]) !== count($durations[$index])) {
+            return false;
+        }
+        foreach ($times[$index] as $time_index => $time) {
+            $minutes = $durations[$index][$time_index] ?? null;
+            if (!is_string($time) || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D', $time) || !is_scalar($minutes) || !preg_match('/^\d+$/D', (string) $minutes)) {
+                return false;
+            }
+            $minutes = (int) $minutes;
+            if ($minutes < 5 || $minutes > 1440 || $minutes % 5 !== 0 || count($slots) >= 10) { return false; }
+            $start = tnmp_parse_local_datetime($date . 'T' . $time, $timezone);
+            if (!$start || $start->getTimestamp() < time() + 300 || isset($seen[$start->format('Y-m-d H:i:s')])) { return false; }
+            $seen[$start->format('Y-m-d H:i:s')] = true;
+            $end = $start->modify('+' . $minutes . ' minutes');
+            $slots[] = array($start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'));
+        }
+    }
+    return $slots;
+}
+
 function tnmp_create() {
     if (!is_user_logged_in() || !current_user_can('read')) {
         wp_die('You must be logged in to create a meeting poll.', '', array('response' => 403));
@@ -38,26 +67,17 @@ function tnmp_create() {
     if (!in_array($timezone, timezone_identifiers_list(), true)) {
         $timezone = 'UTC';
     }
-    $starts = isset($_POST['starts']) && is_array($_POST['starts']) ? array_values(wp_unslash($_POST['starts'])) : array();
-    $ends = isset($_POST['ends']) && is_array($_POST['ends']) ? array_values(wp_unslash($_POST['ends'])) : array();
+    $dates = isset($_POST['dates']) && is_array($_POST['dates']) ? wp_unslash($_POST['dates']) : array();
+    $times = isset($_POST['times']) && is_array($_POST['times']) ? wp_unslash($_POST['times']) : array();
+    $durations = isset($_POST['durations']) && is_array($_POST['durations']) ? wp_unslash($_POST['durations']) : array();
     $emails = isset($_POST['emails']) && is_array($_POST['emails']) ? array_values(wp_unslash($_POST['emails'])) : array();
     $names = isset($_POST['names']) && is_array($_POST['names']) ? array_values(wp_unslash($_POST['names'])) : array();
     $holds = isset($_POST['holds']) && is_array($_POST['holds']) ? wp_unslash($_POST['holds']) : array();
-    if ($title === '' || strlen($title) > 190 || count($starts) > 10 || count($emails) > 50) {
+    if ($title === '' || strlen($title) > 190 || count($emails) > 50) {
         tnmp_redirect('invalid');
     }
-    $slots = array();
-    foreach ($starts as $i => $start_raw) {
-        if (trim((string) $start_raw) === '' && trim((string) ($ends[$i] ?? '')) === '') {
-            continue;
-        }
-        $start = tnmp_parse_local_datetime((string) $start_raw, $timezone);
-        $end = tnmp_parse_local_datetime((string) ($ends[$i] ?? ''), $timezone);
-        if (!$start || !$end || $start->getTimestamp() < time() + 300 || $end <= $start || $end->getTimestamp() - $start->getTimestamp() > DAY_IN_SECONDS) {
-            tnmp_redirect('invalid_time');
-        }
-        $slots[] = array($start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'));
-    }
+    $slots = tnmp_parse_proposed_slots($dates, $times, $durations, $timezone);
+    if ($slots === false) { tnmp_redirect('invalid_time'); }
     $attendees = array();
     $seen = array();
     foreach ($emails as $i => $raw_email) {

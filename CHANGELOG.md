@@ -2,6 +2,12 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.3 - 2026-11-22
+
+- Send calendar invitations as inline calendar requests without separate ICS attachments, with RSVP enabled.
+- Separate poll creation, open polls and history into distinct views.
+- Choose dates first, add multiple start times to each date, and set each time's duration.
+
 ## 0.1.2 - 2026-11-22
 
 - Publish the verified installable package and catalog release record.

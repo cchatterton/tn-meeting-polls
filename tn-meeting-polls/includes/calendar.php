@@ -63,7 +63,7 @@ function tnmp_ics($poll, $slot, $attendee, $event, $kind) {
         'STATUS:' . $status,
         'TRANSP:OPAQUE',
         'ORGANIZER:mailto:' . $organiser_email,
-        'ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:' . $attendee->email,
+        'ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=' . ($kind === 'cancel' ? 'FALSE' : 'TRUE') . ':mailto:' . $attendee->email,
         'END:VEVENT',
         'END:VCALENDAR',
     );
@@ -72,24 +72,13 @@ function tnmp_ics($poll, $slot, $attendee, $event, $kind) {
 
 function tnmp_mail_calendar($attendee, $poll, $slot, $event, $kind) {
     $ical = tnmp_ics($poll, $slot, $attendee, $event, $kind);
-    $temporary = tempnam(get_temp_dir(), 'tnmp-');
-    $file = $temporary ? $temporary . '.ics' : '';
-    if (!$temporary || !@rename($temporary, $file)) {
-        if ($temporary) { @unlink($temporary); }
-        return false;
-    }
-    $written = file_put_contents($file, $ical);
-    if ($written !== strlen($ical)) {
-        @unlink($file);
-        return false;
-    }
     $when = tnmp_format_time($slot->starts_at, $poll->timezone) . ' (' . $poll->timezone . ')';
     if ($kind === 'cancel') {
         $subject = 'Cancelled: ' . $poll->title . ' — ' . $when;
         $body = "The calendar placeholder for this proposed time has been cancelled.\n\n";
     } elseif ($kind === 'final') {
         $subject = 'Confirmed: ' . $poll->title . ' — ' . $when;
-        $body = "This is the confirmed meeting time. The calendar invitation is attached.\n\n";
+        $body = "This is the confirmed meeting time. Please respond to this calendar invitation.\n\n";
     } else {
         $subject = 'Placeholder: ' . $poll->title . ' — ' . $when;
         $body = "This is a tentative calendar placeholder for one proposed time. Please vote using the separate poll email.\n\n";
@@ -98,7 +87,7 @@ function tnmp_mail_calendar($attendee, $poll, $slot, $event, $kind) {
     if ($poll->description !== '') {
         $body .= $poll->description . "\n\n";
     }
-    $body .= "Calendar file attached.\n";
+    $body .= $kind === 'cancel' ? "The calendar invitation has been cancelled.\n" : "Accept or decline this calendar invitation in your email or calendar app.\n";
     $calendar_part = function ($mailer) use ($ical, $body) {
         if (property_exists($mailer, 'Ical')) {
             $mailer->Ical = $ical;
@@ -108,13 +97,12 @@ function tnmp_mail_calendar($attendee, $poll, $slot, $event, $kind) {
         }
     };
     add_action('phpmailer_init', $calendar_part, 999);
-    $sent = wp_mail($attendee->email, $subject, $body, array('Content-Type: text/plain; charset=UTF-8'), array($file));
+    $sent = wp_mail($attendee->email, $subject, $body, array('Content-Type: text/html; charset=UTF-8'));
     remove_action('phpmailer_init', $calendar_part, 999);
     if (isset($GLOBALS['phpmailer']) && property_exists($GLOBALS['phpmailer'], 'Ical')) {
         $GLOBALS['phpmailer']->Ical = '';
         $GLOBALS['phpmailer']->AltBody = '';
     }
-    @unlink($file);
     return $sent;
 }
 

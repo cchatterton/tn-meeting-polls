@@ -22,6 +22,44 @@
     });
   });
 
+  var dates = document.getElementById('tnmp-dates');
+  if (dates) {
+    var updateSlotButtons = function () {
+      var full = dates.querySelectorAll('.tnmp-time-row').length >= 10;
+      dates.querySelectorAll('.tnmp-add-time').forEach(function (button) { button.disabled = full; });
+      var addDate = document.getElementById('tnmp-add-date');
+      if (addDate) addDate.disabled = full;
+    };
+    dates.addEventListener('click', function (event) {
+      var button = event.target.closest('.tnmp-add-time');
+      if (!button || dates.querySelectorAll('.tnmp-time-row').length >= 10) return;
+      var group = button.closest('.tnmp-date-group');
+      var row = group.querySelector('.tnmp-time-row').cloneNode(true);
+      row.querySelector('input[type="time"]').value = '';
+      row.querySelector('input[type="number"]').value = '60';
+      group.querySelector('.tnmp-times').appendChild(row);
+      updateSlotButtons();
+    });
+    document.getElementById('tnmp-add-date').addEventListener('click', function () {
+      if (dates.querySelectorAll('.tnmp-time-row').length >= 10) return;
+      var index = dates.children.length;
+      var group = dates.firstElementChild.cloneNode(true);
+      group.dataset.dateIndex = String(index);
+      group.querySelector('input[type="date"]').value = '';
+      group.querySelectorAll('.tnmp-time-row').forEach(function (row, position) {
+        if (position > 0) row.remove();
+      });
+      group.querySelectorAll('input').forEach(function (input) {
+        input.name = input.name.replace(/\[\d+\]/, '[' + index + ']');
+      });
+      group.querySelector('input[type="time"]').value = '';
+      group.querySelector('input[type="number"]').value = '60';
+      dates.appendChild(group);
+      updateSlotButtons();
+    });
+    updateSlotButtons();
+  }
+
   bindConfirm(document);
   var results = document.getElementById('tnmp-results');
   var refreshStatus = document.getElementById('tnmp-refresh-status');

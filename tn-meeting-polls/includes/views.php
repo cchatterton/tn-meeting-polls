@@ -7,7 +7,7 @@ function tnmp_notice_text($code) {
     $notices = array(
         'created' => 'Poll created. Invitation and calendar emails are being sent.',
         'invalid' => 'Please complete the meeting title, at least one valid time, and at least one attendee.',
-        'invalid_time' => 'Check the proposed times. Each must be in the future and end after it starts.',
+        'invalid_time' => 'Check the proposed dates, start times and durations. Each time must be in the future.',
         'invalid_attendee' => 'Check attendee email addresses and remove duplicates.',
         'database' => 'The poll could not be saved. Please try again.',
         'slot_closed' => 'That proposed time is closed. Placeholder cancellations have been queued.',
@@ -39,19 +39,34 @@ function tnmp_render_app() {
     }
     $code = sanitize_key(wp_unslash($_GET['tnmp_notice'] ?? ''));
     $notice = tnmp_notice_text($code);
+    $view = sanitize_key(wp_unslash($_GET['tnmp_view'] ?? 'open'));
+    if (!in_array($view, array('create', 'open', 'history'), true)) { $view = 'open'; }
     ob_start();
     if ($notice) {
         echo '<div class="notice notice-info tnmp-notice" role="status"><p>' . esc_html($notice) . '</p></div>';
     }
     echo '<header class="tnmp-hero"><div><p class="tnmp-hero-eyebrow">PLAN. VOTE. MEET.</p><h2>Meeting Polls</h2><p>Find a time that works, with verified votes and optional calendar holds.</p></div><span class="tnmp-version" aria-label="' . esc_attr('Version ' . TNMP_VERSION) . '">v' . esc_html(TNMP_VERSION) . '</span></header>';
-    echo '<h2>Create a meeting poll</h2>';
-    tnmp_render_create_form();
-    echo '<h2>Your meeting polls</h2>';
-    echo '<p id="tnmp-refresh-status" class="tnmp-refresh-status" role="status" aria-live="polite"></p>';
-    echo '<div id="tnmp-results">';
-    tnmp_render_dashboard();
-    echo '</div>';
+    echo '<nav class="tnmp-view-nav" aria-label="Meeting poll views">';
+    foreach (array('create' => 'Create a poll', 'open' => 'Open polls', 'history' => 'History') as $key => $label) {
+        echo '<a href="' . esc_url(tnmp_view_url($key)) . '"' . ($view === $key ? ' aria-current="page"' : '') . '>' . esc_html($label) . '</a>';
+    }
+    echo '</nav>';
+    if ($view === 'create') {
+        echo '<h2>Create a meeting poll</h2>';
+        tnmp_render_create_form();
+    } else {
+        echo '<h2>' . ($view === 'open' ? 'Open polls' : 'History') . '</h2>';
+        if ($view === 'open') { echo '<p id="tnmp-refresh-status" class="tnmp-refresh-status" role="status" aria-live="polite"></p>'; }
+        echo '<div' . ($view === 'open' ? ' id="tnmp-results"' : '') . '>';
+        tnmp_render_dashboard($view);
+        echo '</div>';
+    }
     return ob_get_clean();
+}
+
+function tnmp_view_url($view) {
+    $base = is_admin() ? admin_url('admin.php?page=tn-meeting-polls') : get_permalink();
+    return add_query_arg('tnmp_view', $view, $base);
 }
 
 function tnmp_return_field() {
@@ -77,12 +92,10 @@ function tnmp_render_create_form() {
         echo '<option value="' . esc_attr($timezone) . '"' . selected($timezone, $zone, false) . '>' . esc_html($timezone) . '</option>';
     }
     echo '</select></label>';
-    echo '<h3>Proposed times</h3><p>Enter local times in the selected time zone. Up to 10 options.</p>';
-    echo '<div id="tnmp-slots">';
-    for ($i = 0; $i < 3; $i++) {
-        echo '<div class="tnmp-row tnmp-slot-row"><label>Start <input type="datetime-local" name="starts[]"' . ($i === 0 ? ' required' : '') . '></label><label>End <input type="datetime-local" name="ends[]"' . ($i === 0 ? ' required' : '') . '></label></div>';
-    }
-    echo '</div><button type="button" class="button tnmp-add" data-target="tnmp-slots" data-limit="10">Add time</button>';
+    echo '<h3>Proposed dates and times</h3><p>Pick a date, then add one or more start times. Set a duration for each time. Up to 10 options total.</p>';
+    echo '<div id="tnmp-dates">';
+    tnmp_date_group(0);
+    echo '</div><button type="button" class="button" id="tnmp-add-date">Add date</button>';
     echo '<h3>Attendees</h3><p>Select “Send placeholders” only for people who should receive one tentative calendar invitation per proposed time.</p>';
     echo '<div id="tnmp-attendees">';
     for ($i = 0; $i < 3; $i++) {
@@ -93,6 +106,19 @@ function tnmp_render_create_form() {
     echo '</form>';
 }
 
+function tnmp_date_group($index) {
+    echo '<fieldset class="tnmp-date-group" data-date-index="' . (int) $index . '"><legend>Proposed date</legend>';
+    echo '<label>Date <input type="date" name="dates[' . (int) $index . ']" required></label>';
+    echo '<div class="tnmp-times">';
+    tnmp_time_row($index);
+    echo '</div><button type="button" class="button tnmp-add-time">Add time on this date</button></fieldset>';
+}
+
+function tnmp_time_row($index) {
+    echo '<div class="tnmp-row tnmp-time-row"><label>Start <input type="time" name="times[' . (int) $index . '][]" required></label>';
+    echo '<label>Duration (minutes) <input type="number" name="durations[' . (int) $index . '][]" min="5" max="1440" step="5" value="60" required></label></div>';
+}
+
 function tnmp_attendee_row($index, $required = false) {
     echo '<div class="tnmp-row tnmp-attendee-row">';
     echo '<label>Email <input type="email" name="emails[]"' . ($required ? ' required' : '') . '></label>';
@@ -101,11 +127,12 @@ function tnmp_attendee_row($index, $required = false) {
     echo '</div>';
 }
 
-function tnmp_render_dashboard() {
+function tnmp_render_dashboard($view = 'open') {
     global $wpdb;
-    $polls = $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . tnmp_table('polls') . ' WHERE organiser_id = %d ORDER BY id DESC LIMIT 30', get_current_user_id()));
+    $condition = $view === 'history' ? "status IN ('final','cancelled')" : "status = 'open'";
+    $polls = $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . tnmp_table('polls') . ' WHERE organiser_id = %d AND ' . $condition . ' ORDER BY id DESC LIMIT 30', get_current_user_id()));
     if (!$polls) {
-        echo '<p>No meeting polls yet.</p>';
+        echo '<p>' . ($view === 'history' ? 'No historical polls yet.' : 'No open polls yet.') . '</p>';
         return;
     }
     foreach ($polls as $poll) {
@@ -192,7 +219,7 @@ function tnmp_ajax_results() {
         wp_send_json_error('Not authorised', 403);
     }
     ob_start();
-    tnmp_render_dashboard();
+    tnmp_render_dashboard('open');
     wp_send_json_success(array('html' => ob_get_clean()));
 }
 
