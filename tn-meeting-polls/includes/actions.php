@@ -561,7 +561,7 @@ function tnmp_verify_code($attendee) {
         'httponly' => true, 'samesite' => 'Lax',
     ));
     $_COOKIE['tnmp_session_' . $attendee->id] = $session;
-    return 'Email verified. You can now vote.';
+    return 'You are verified. You can now vote.';
 }
 
 function tnmp_save_vote($attendee) {

@@ -1,7 +1,7 @@
 # TN Meeting Polls
 
 Author: Techn  
-Version: 0.1.8
+Version: 0.1.9
 Status: MVP  
 Branding mode: Author Branded
 
@@ -15,7 +15,7 @@ Activate the plugin and open **Meeting Polls** in WordPress. Create, Open polls,
 
 Open polls have an Edit poll link. It opens the Create tab with current values. Saving retains unchanged vote and calendar records, cancels placeholders for removed times or invitees, and sends revised options and new invitations. Removed invitees can no longer use their voting link. Previously closed times can be retained or removed; only open times accept votes.
 
-The attendee voting page shows each local date once, followed by its proposed start times and voting controls.
+The attendee voting page shows meeting duration near the title and each local date once, with every proposed time beside its Prefer, Yes and No controls. Code verification is presented in one row before voting.
 
 ## Calendar behaviour
 

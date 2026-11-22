@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/vote-view-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.8');
+define('TNMP_VERSION', '0.1.9');
 define('TNMP_URL', 'https://example.test/wp-content/plugins/tn-meeting-polls/');
 function nocache_headers() {}
 function wp_enqueue_style($handle, $url, $deps, $version) {}
@@ -12,7 +12,7 @@ function wp_footer() {}
 function esc_html($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function wp_create_nonce($action) { return 'nonce'; }
-function tnmp_has_session($attendee) { return true; }
+function tnmp_has_session($attendee) { return $GLOBALS['verified'] ?? true; }
 function tnmp_get_votes($poll_id) { return array((object) array('attendee_id' => 3, 'slot_id' => 10, 'choice' => 'yes')); }
 function tnmp_get_slots($poll_id) {
     return array(
@@ -30,6 +30,14 @@ $html = ob_get_clean();
 function check_vote_view($condition, $message) { if (!$condition) { fwrite(STDERR, "FAIL: $message\n"); exit(1); } }
 check_vote_view(substr_count($html, 'Tue 24 Nov 2026') === 1 && substr_count($html, 'Wed 25 Nov 2026') === 1, 'each local date is shown once');
 check_vote_view(strpos($html, '<h4>7:00 PM</h4>') !== false && strpos($html, '<h4>8:00 PM</h4>') !== false, 'multiple start times appear under one date');
-check_vote_view(strpos($html, 'Until 8:00 PM') !== false && strpos($html, 'Until Tue 24 Nov 2026') === false, 'same-day end times do not repeat the date');
+check_vote_view(strpos($html, 'Meeting duration: 60 minutes') !== false && strpos($html, 'Until ') === false, 'duration appears at top and end times are omitted');
+check_vote_view(strpos($html, 'Vote for preferred time') !== false && strpos($html, 'Voting No cancels') === false, 'voting copy uses requested wording');
+check_vote_view((bool) preg_match('/<div class="tnmp-vote-slot"><div class="tnmp-vote-time"><h4>7:00 PM<\/h4><\/div><div class="tnmp-vote-options">/', $html), 'time and vote buttons share a slot row');
 check_vote_view(substr_count($html, 'name="tnmp_action" value="vote"') === 9 && strpos($html, 'aria-pressed="true"') !== false, 'vote buttons and selected vote remain available');
+$GLOBALS['verified'] = false;
+ob_start();
+tnmp_render_vote_page($poll, $attendee);
+$unverified = ob_get_clean();
+check_vote_view(strpos($unverified, 'Verify yourself to vote') !== false && strpos($unverified, 'Request a six digit code') === false, 'verification heading and copy updated');
+check_vote_view((bool) preg_match('/<div class="tnmp-verify-row">.*Send code<\/button><\/form>.*placeholder="Enter code".*Verify<\/button><\/form><\/div>/s', $unverified), 'send code, code input, and verify button share one row');
 echo "Grouped vote dates and controls passed.\n";

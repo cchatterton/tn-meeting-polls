@@ -3,7 +3,7 @@ Contributors:
 Tags: scheduling, meetings, polls, calendar
 Requires at least: 7.0
 Requires PHP: 7.4
-Stable tag: 0.1.8
+Stable tag: 0.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,7 +25,7 @@ Open polls can be edited from their poll card. Editing opens the Create a poll t
 
 == How it works ==
 
-Logged-in users can create polls with up to 10 proposed times and 50 attendees. Create, Open polls, History, Attendees and Settings have separate views. Each organiser can save a default meeting length and earliest and latest meeting hours. The form starts with one attendee and defaults to the WordPress site timezone, including fixed UTC offsets. Organisers set one duration for the whole poll, then choose dates and add one or more start times in 10-minute steps to each date. The Attendees view stores a personal contact list, ordered by name. In Create a poll, search the list by name or email and add matching contacts to the poll, or type new attendees directly. Attendees receive a private voting link, request a six-digit email code, and vote without a WordPress account. The voting page groups all proposed times under one heading per local date. The organiser sees vote counts and individual responses for open polls, refreshed every 15 seconds.
+Logged-in users can create polls with up to 10 proposed times and 50 attendees. Create, Open polls, History, Attendees and Settings have separate views. Each organiser can save a default meeting length and earliest and latest meeting hours. The form starts with one attendee and defaults to the WordPress site timezone, including fixed UTC offsets. Organisers set one duration for the whole poll, then choose dates and add one or more start times in 10-minute steps to each date. The Attendees view stores a personal contact list, ordered by name. In Create a poll, search the list by name or email and add matching contacts to the poll, or type new attendees directly. Attendees receive a private voting link, request a six-digit email code to verify themselves, and vote without a WordPress account. The voting page shows meeting duration near the title, groups proposed times under one heading per local date, and places each time beside its voting choices. The organiser sees vote counts and individual responses for open polls, refreshed every 15 seconds.
 
 Calendar placeholders are opt-in per attendee. Each proposed time is sent as a separate iCalendar invitation with text/calendar as the primary message content, without a file attachment, so supported email and calendar clients can offer Accept or Decline. When SMTP2GO's WordPress mail plugin is active, calendar requests use its MIME API so the calendar content type is preserved. The configured SMTP2GO API key needs permission to send MIME email. An attendee's No cancels only their own placeholder. Closing a time cancels all its placeholders. Finalising sends a confirmed invitation to everyone who has not voted No for the chosen time and cancels other placeholders. Cancelling a poll cancels all outstanding placeholders.
 

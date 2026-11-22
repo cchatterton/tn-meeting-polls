@@ -2,6 +2,12 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.9 - 2026-11-22
+
+- Make the voting page use identity verification wording and a single-row code entry.
+- Show meeting duration at the top, remove repeated end times, and place each time beside its three vote choices.
+- Remove the placeholder explanation below the vote options.
+
 ## 0.1.8 - 2026-11-22
 
 - Group attendee voting choices under one heading per local date, with individual times and votes below it.

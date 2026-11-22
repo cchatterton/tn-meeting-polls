@@ -342,21 +342,29 @@ function tnmp_render_vote_page($poll, $attendee, $message = '') {
         echo '<h1>Meeting poll</h1><p>' . esc_html($message) . '</p>';
     } else {
         $verified = tnmp_has_session($attendee);
+        $slots = tnmp_get_slots($poll->id);
+        $durations = array();
+        foreach ($slots as $slot) {
+            $durations[] = (int) ((strtotime($slot->ends_at . ' UTC') - strtotime($slot->starts_at . ' UTC')) / 60);
+        }
+        $durations = array_values(array_unique($durations));
+        sort($durations);
         echo '<header class="tnmp-vote-header"><p class="tnmp-eyebrow">Scheduling poll</p><span class="tnmp-version" aria-label="' . esc_attr('Version ' . TNMP_VERSION) . '">v' . esc_html(TNMP_VERSION) . '</span><h1>' . esc_html($poll->title) . '</h1></header>';
         if ($poll->description !== '') { echo '<p>' . nl2br(esc_html($poll->description)) . '</p>'; }
+        if ($durations) { echo '<p class="tnmp-vote-duration">Meeting duration' . (count($durations) > 1 ? 's' : '') . ': ' . esc_html(implode(', ', $durations)) . ' minutes</p>'; }
         echo '<p class="tnmp-muted">Voting as ' . esc_html($attendee->email) . ' · Times shown in ' . esc_html($poll->timezone) . '</p>';
         if ($message !== '') { echo '<div class="tnmp-notice" role="status">' . esc_html($message) . '</div>'; }
         if (!$verified && $poll->status === 'open') {
-            echo '<section class="tnmp-card"><h2>Verify your email</h2><p>Request a six digit code, then enter it below to vote.</p>';
+            echo '<section class="tnmp-card"><h2>Verify yourself to vote</h2><div class="tnmp-verify-row">';
             echo '<form method="post">';
             echo '<input type="hidden" name="tnmp_action" value="send_code">';
             echo '<input type="hidden" name="_tnmp_nonce" value="' . esc_attr(wp_create_nonce('tnmp_vote_' . $attendee->id)) . '">';
-            echo '<button type="submit">Send verification code</button></form>';
+            echo '<button type="submit">Send code</button></form>';
             echo '<form method="post" class="tnmp-code-form"><input type="hidden" name="tnmp_action" value="verify"><input type="hidden" name="_tnmp_nonce" value="' . esc_attr(wp_create_nonce('tnmp_vote_' . $attendee->id)) . '">';
-            echo '<label>Six digit code <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label><button type="submit">Verify and continue</button></form></section>';
+            echo '<label class="tnmp-code-input"><span class="tnmp-visually-hidden">Six digit code</span><input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="Enter code" required></label><button type="submit">Verify</button></form></div></section>';
         }
         if ($poll->status !== 'open') { echo '<div class="tnmp-notice">This poll is ' . esc_html($poll->status === 'final' ? 'finalised' : 'cancelled') . '. Voting is closed.</div>'; }
-        echo '<h2>Choose times you prefer or are available</h2>';
+        echo '<h2>Vote for preferred time</h2>';
         $votes = tnmp_get_votes($poll->id);
         $counts = array();
         $mine = array();
@@ -366,18 +374,17 @@ function tnmp_render_vote_page($poll, $attendee, $message = '') {
         }
         $current_day = '';
         $vote_timezone = new DateTimeZone($poll->timezone);
-        foreach (tnmp_get_slots($poll->id) as $slot) {
+        foreach ($slots as $slot) {
             $start = (new DateTimeImmutable($slot->starts_at, new DateTimeZone('UTC')))->setTimezone($vote_timezone);
-            $end = (new DateTimeImmutable($slot->ends_at, new DateTimeZone('UTC')))->setTimezone($vote_timezone);
             $day = $start->format('Y-m-d');
             if ($day !== $current_day) {
                 if ($current_day !== '') { echo '</section>'; }
                 $current_day = $day;
                 echo '<section class="tnmp-vote-day" aria-labelledby="tnmp-day-' . esc_attr($day) . '"><h3 id="tnmp-day-' . esc_attr($day) . '">' . esc_html($start->format('D j M Y')) . '</h3>';
             }
-            $until = $end->format('Y-m-d') === $day ? $end->format('g:i A') : $end->format('D j M Y, g:i A');
-            echo '<div class="tnmp-vote-slot"><h4>' . esc_html($start->format('g:i A')) . '</h4><p class="tnmp-muted">Until ' . esc_html($until) . '</p>';
-            if ($slot->status === 'closed') { echo '<p class="tnmp-closed">This time is closed.</p>'; }
+            echo '<div class="tnmp-vote-slot"><div class="tnmp-vote-time"><h4>' . esc_html($start->format('g:i A')) . '</h4>';
+            if ($slot->status === 'closed') { echo '<small class="tnmp-closed">Closed</small>'; }
+            echo '</div>';
             echo '<div class="tnmp-vote-options">';
             foreach (array('prefer' => '♡ Prefer', 'yes' => '✓ Yes', 'no' => '× No') as $choice => $label) {
                 if ($verified && $poll->status === 'open' && $slot->status === 'open') {
@@ -391,7 +398,6 @@ function tnmp_render_vote_page($poll, $attendee, $message = '') {
             echo '</div></div>';
         }
         if ($current_day !== '') { echo '</section>'; }
-        if ($attendee->holds) { echo '<p class="tnmp-muted">Voting No cancels your calendar placeholder for that time. You can change your vote while the poll is open.</p>'; }
     }
     ?></main><?php wp_footer(); ?></body></html><?php
 }

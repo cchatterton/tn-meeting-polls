@@ -76,20 +76,26 @@
 .tnmp-vote-shell h1 { margin: 0.3125rem 0 0.625rem; font-size: clamp(1.625rem, 5vw, 2.25rem); }
 .tnmp-eyebrow { color: #063b5d; font-weight: 700; margin: 0; }
 .tnmp-vote-shell button { cursor: pointer; border: 0.0625rem solid #002840; border-radius: 0.3125rem; padding: 0.625rem 0.9375rem; background: #002840; color: white; font: inherit; }
-.tnmp-code-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 0.625rem; margin-top: 1.125rem; }
-.tnmp-code-form label { font-weight: 600; }
-.tnmp-code-form input { display: block; margin-top: 0.3125rem; padding: 0.5rem; font-size: 1.125rem; width: 9.375rem; }
+.tnmp-verify-row, .tnmp-code-form { display: flex; align-items: stretch; gap: 0.5rem; min-width: 0; }
+.tnmp-verify-row > form { margin: 0; }
+.tnmp-verify-row > form:first-child { flex: none; }
+.tnmp-verify-row .tnmp-code-form { flex: 1; }
+.tnmp-verify-row button { white-space: nowrap; }
+.tnmp-code-input { flex: 1; min-width: 0; }
+.tnmp-code-input input { display: block; width: 100%; height: 100%; padding: 0.5rem; font-size: 1rem; }
+.tnmp-visually-hidden { position: absolute; width: 0.0625rem; height: 0.0625rem; padding: 0; margin: -0.0625rem; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.tnmp-vote-duration { font-weight: 600; margin: 0.75rem 0 0.25rem; }
 .tnmp-vote-day { margin-top: 1.5rem; }
 .tnmp-vote-day > h3 { margin: 0 0 0.25rem; font-size: 1.25rem; }
-.tnmp-vote-slot { border-bottom: 0.0625rem solid #d5dfe5; padding: 0.75rem 0 1.0625rem; }
-.tnmp-vote-slot h4 { margin: 0 0 0.125rem; font-size: 1.125rem; }
-.tnmp-vote-slot p { margin: 0.1875rem 0 0.75rem; }
-.tnmp-vote-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5625rem; }
+.tnmp-vote-slot { display: grid; grid-template-columns: minmax(5.5rem, 7rem) minmax(0, 1fr); gap: 0.5rem; align-items: start; border-bottom: 0.0625rem solid #d5dfe5; padding: 0.75rem 0 1.0625rem; }
+.tnmp-vote-time { padding-top: 0.625rem; }
+.tnmp-vote-time h4 { margin: 0 0 0.125rem; font-size: 1.125rem; }
+.tnmp-vote-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5625rem; min-width: 0; }
 .tnmp-vote-options form, .tnmp-vote-options div { text-align: center; }
-.tnmp-vote-options .tnmp-choice { width: 100%; display: block; border: 0.0625rem solid #b6cad8; border-radius: 0.3125rem; padding: 0.625rem 0.3125rem; color: #063b5d; background: #fff; font-weight: 600; text-decoration: none; }
+.tnmp-vote-options .tnmp-choice { width: 100%; display: block; border: 0.0625rem solid #b6cad8; border-radius: 0.3125rem; padding: 0.625rem 0.3125rem; color: #063b5d; background: #fff; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .tnmp-vote-options .tnmp-choice.is-selected { color: #fff; background: #002840; border-color: #002840; }
 .tnmp-vote-options small { display: block; color: #5c6d79; margin-top: 0.3125rem; }
-@media (max-width: 37.5rem) { .tnmp-card { padding: 1rem; } .tnmp-row label, .tnmp-date-group .tnmp-row label, .tnmp-row .tnmp-check { flex: 1 1 100%; } .tnmp-vote-options { gap: 0.3125rem; } .tnmp-vote-options .tnmp-choice { font-size: 0.875rem; } }
+@media (max-width: 37.5rem) { .tnmp-card { padding: 1rem; } .tnmp-row label, .tnmp-date-group .tnmp-row label, .tnmp-row .tnmp-check { flex: 1 1 100%; } .tnmp-verify-row { gap: 0.3125rem; } .tnmp-verify-row button { padding: 0.5rem 0.375rem; font-size: 0.875rem; } .tnmp-code-form { gap: 0.3125rem; } .tnmp-code-input input { font-size: 0.875rem; } .tnmp-vote-slot { grid-template-columns: 4.75rem minmax(0, 1fr); gap: 0.3125rem; } .tnmp-vote-time h4 { font-size: 1rem; } .tnmp-vote-options { gap: 0.25rem; } .tnmp-vote-options .tnmp-choice { font-size: 0.8125rem; padding: 0.5rem 0.125rem; } .tnmp-vote-options small { font-size: 0.6875rem; } }
 
 .tnmp-wrap .button-primary, .tnmp-vote-shell button:not(.tnmp-choice) { background: var(--tnmp-navy); border-color: var(--tnmp-navy); color: #ffffff; }
 .tnmp-wrap .button-primary:hover, .tnmp-vote-shell button:not(.tnmp-choice):hover { background: var(--tnmp-navy-light); border-color: var(--tnmp-navy-light); }
