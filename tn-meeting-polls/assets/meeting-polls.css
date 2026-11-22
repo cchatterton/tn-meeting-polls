@@ -11,6 +11,8 @@
   color: var(--tnmp-ink);
 }
 .tnmp-wrap { max-width: 70rem; }
+body.toplevel_page_tn-meeting-polls, body.toplevel_page_tn-meeting-polls #wpwrap, body.toplevel_page_tn-meeting-polls #wpcontent, body.toplevel_page_tn-meeting-polls #wpbody, body.toplevel_page_tn-meeting-polls #wpbody-content { background: #f0f0f1; }
+body.toplevel_page_tn-meeting-polls #wpwrap, body.toplevel_page_tn-meeting-polls #wpcontent { min-height: 100vh; }
 .tnmp-hero {
   position: relative;
   display: flex;
@@ -70,7 +72,13 @@
 .tnmp-submit { margin: 1.375rem 0 0; }
 .tnmp-notice { border-left: 0.25rem solid #ff6b00; background: #f2f6f8; padding: 0.75rem 1rem; margin: 0.875rem 0; }
 .tnmp-poll-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
-.tnmp-poll-head h3 { margin: 0; }
+.tnmp-poll > summary { cursor: pointer; list-style: none; }
+.tnmp-poll > summary::-webkit-details-marker { display: none; }
+.tnmp-poll-chevron { width: 0; height: 0; border-top: 0.3rem solid transparent; border-bottom: 0.3rem solid transparent; border-left: 0.45rem solid currentColor; transition: transform 0.15s ease; }
+.tnmp-poll[open] > summary .tnmp-poll-chevron { transform: rotate(90deg); }
+.tnmp-poll-head .tnmp-status { margin-left: auto; }
+.tnmp-poll-body { padding-top: 1rem; }
+.tnmp-poll-head h3 { flex: 1; min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .tnmp-status { background: #f2f6f8; color: #063b5d; border-radius: 6.25rem; padding: 0.25rem 0.625rem; font-size: 0.8125rem; }
 .tnmp-muted { color: #5c6d79; font-size: 0.8125rem; }
 .tnmp-scroll { overflow-x: auto; }

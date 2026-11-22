@@ -289,12 +289,12 @@ function tnmp_render_dashboard($view = 'open') {
         echo '<p>' . ($view === 'history' ? 'No historical polls yet.' : 'No open polls yet.') . '</p>';
         return;
     }
-    foreach ($polls as $poll) {
-        tnmp_render_poll_card($poll);
+    foreach ($polls as $index => $poll) {
+        tnmp_render_poll_card($poll, $index === 0);
     }
 }
 
-function tnmp_render_poll_card($poll) {
+function tnmp_render_poll_card($poll, $expanded = false) {
     global $wpdb;
     $slots = tnmp_get_slots($poll->id);
     $attendees = tnmp_get_attendees($poll->id);
@@ -307,8 +307,8 @@ function tnmp_render_poll_card($poll) {
     }
     $failed = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM " . tnmp_table('jobs') . " WHERE poll_id = %d AND state = 'failed'", $poll->id));
     $mail_error = $wpdb->get_var($wpdb->prepare("SELECT last_error FROM " . tnmp_table('jobs') . " WHERE poll_id = %d AND state IN ('pending','failed') AND last_error <> '' ORDER BY id DESC LIMIT 1", $poll->id));
-    echo '<section class="tnmp-card tnmp-poll" data-poll-id="' . (int) $poll->id . '">';
-    echo '<div class="tnmp-poll-head"><h3>' . esc_html($poll->title) . '</h3><span class="tnmp-status">' . esc_html(ucfirst($poll->status)) . '</span></div>';
+    echo '<details class="tnmp-card tnmp-poll" name="tnmp-polls" data-poll-id="' . (int) $poll->id . '"' . ($expanded ? ' open' : '') . '>';
+    echo '<summary class="tnmp-poll-head"><span class="tnmp-poll-chevron" aria-hidden="true"></span><h3>' . esc_html($poll->title) . '</h3><span class="tnmp-status">' . esc_html(ucfirst($poll->status)) . '</span></summary><div class="tnmp-poll-body">';
     if ($poll->status === 'open') { echo '<p><a class="button" href="' . esc_url(add_query_arg('tnmp_edit', (int) $poll->id, tnmp_view_url('create'))) . '">Edit poll</a></p>'; }
     if ($poll->description !== '') {
         echo '<p>' . nl2br(esc_html($poll->description)) . '</p>';
@@ -340,7 +340,7 @@ function tnmp_render_poll_card($poll) {
         echo '</td></tr>';
     }
     echo '</tbody></table></div>';
-    echo '<details><summary>Individual votes</summary><div class="tnmp-scroll"><table class="tnmp-table"><thead><tr><th>Attendee</th>';
+    echo '<details class="tnmp-individual-votes"><summary>Individual votes</summary><div class="tnmp-scroll"><table class="tnmp-table"><thead><tr><th>Attendee</th>';
     foreach ($slots as $slot) {
         echo '<th>' . esc_html(tnmp_format_time($slot->starts_at, $poll->timezone)) . '</th>';
     }
@@ -367,7 +367,7 @@ function tnmp_render_poll_card($poll) {
         tnmp_action_form($poll->id, 0, 'delete', 'Delete poll', 0, $pending_jobs > 0);
         echo '</div>';
     }
-    echo '</section>';
+    echo '</div></details>';
 }
 
 function tnmp_action_form($poll_id, $slot_id, $action, $label, $attendee_id = 0, $disabled = false) {

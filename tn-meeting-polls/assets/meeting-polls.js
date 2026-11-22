@@ -228,6 +228,13 @@
 
   var results = document.getElementById('tnmp-results');
   var refreshStatus = document.getElementById('tnmp-refresh-status');
+  document.addEventListener('toggle', function (event) {
+    var opened = event.target;
+    if (!opened.matches || !opened.matches('.tnmp-poll') || !opened.open) return;
+    document.querySelectorAll('.tnmp-poll[open]').forEach(function (card) {
+      if (card !== opened) card.open = false;
+    });
+  }, true);
   if (results && typeof tnmpData !== 'undefined') {
     window.setInterval(function () {
       if (document.hidden || results.contains(document.activeElement)) return;
@@ -236,14 +243,18 @@
         .then(function (response) { return response.json(); })
         .then(function (data) {
           if (!data.success || !data.data || !data.data.html) throw new Error('Live update failed');
-          var openDetails = Array.from(results.querySelectorAll('details[open]')).map(function (item) {
-            return item.closest('[data-poll-id]').dataset.pollId;
-          });
+          var openCard = results.querySelector('.tnmp-poll[open]');
+          var openId = openCard ? openCard.dataset.pollId : null;
+          var votesOpen = openCard && !!openCard.querySelector('.tnmp-individual-votes[open]');
           results.innerHTML = data.data.html;
-          openDetails.forEach(function (id) {
-            var card = results.querySelector('[data-poll-id="' + id + '"]');
-            if (card) card.querySelector('details').open = true;
-          });
+          results.querySelectorAll('.tnmp-poll[open]').forEach(function (card) { card.open = false; });
+          if (openId) {
+            var card = results.querySelector('.tnmp-poll[data-poll-id="' + openId + '"]');
+            if (card) {
+              card.open = true;
+              if (votesOpen) card.querySelector('.tnmp-individual-votes').open = true;
+            }
+          }
           if (refreshStatus && refreshStatus.textContent) refreshStatus.textContent = 'Live updates resumed.';
         }).catch(function () {
           if (refreshStatus && refreshStatus.textContent !== 'Live updates paused. Refresh this page to retry.') {

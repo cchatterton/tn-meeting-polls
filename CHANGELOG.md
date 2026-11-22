@@ -2,6 +2,12 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.18 - 2026-11-22
+
+- Show poll cards as an accordion, with one poll open at a time and the first poll open initially.
+- Preserve the open poll and its Individual votes state during live refresh.
+- Extend the Meeting Polls admin background through the full page height.
+
 ## 0.1.17 - 2026-11-22
 
 - Restore the original single browser time input while retaining 10-minute validation.

@@ -3,7 +3,7 @@ Contributors:
 Tags: scheduling, meetings, polls, calendar
 Requires at least: 7.0
 Requires PHP: 7.4
-Stable tag: 0.1.17
+Stable tag: 0.1.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,7 +25,7 @@ Open polls can be edited from their poll card. Editing opens the Create/Edit tab
 
 == How it works ==
 
-Logged-in users can create polls with up to 10 proposed times and 50 attendees. Create/Edit, Open/In-Progress, History, Contacts, Templates and Settings have separate views. Each organiser can save a default meeting length, earliest and latest meeting hours, and historical poll retention period. The form starts with one attendee and defaults to the WordPress site timezone, including fixed UTC offsets. Organisers set one duration for the whole poll, then choose dates and add one or more start times using the browser's time input in 10-minute steps on each date. Contacts are stored in a personal list, ordered by name. From Contacts, select people and open Create/Edit with them already added, or add and edit contacts through a modal. In Create/Edit, search contacts by name or email and add them to the poll, or type new attendees directly. Templates store a title, details and duration; opening one fills those fields in Create/Edit. Attendees receive a private voting link, request a six-digit email code to verify themselves, and vote without a WordPress account. The voting page shows meeting duration near the title, groups proposed times under one heading per local date, and places each time beside its voting choices. The organiser sees vote counts and individual responses for open polls, refreshed every 15 seconds.
+Logged-in users can create polls with up to 10 proposed times and 50 attendees. Create/Edit, Open/In-Progress, History, Contacts, Templates and Settings have separate views. Each organiser can save a default meeting length, earliest and latest meeting hours, and historical poll retention period. The form starts with one attendee and defaults to the WordPress site timezone, including fixed UTC offsets. Organisers set one duration for the whole poll, then choose dates and add one or more start times using the browser's time input in 10-minute steps on each date. Contacts are stored in a personal list, ordered by name. From Contacts, select people and open Create/Edit with them already added, or add and edit contacts through a modal. In Create/Edit, search contacts by name or email and add them to the poll, or type new attendees directly. Templates store a title, details and duration; opening one fills those fields in Create/Edit. Attendees receive a private voting link, request a six-digit email code to verify themselves, and vote without a WordPress account. The voting page shows meeting duration near the title, groups proposed times under one heading per local date, and places each time beside its voting choices. The organiser sees vote counts and individual responses for open polls, refreshed every 15 seconds. Open and historical polls appear in an accordion with one expanded poll at a time.
 
 Calendar placeholders are opt-in per attendee. Each proposed time is sent as a separate iCalendar invitation with text/calendar as the primary message content, without a file attachment, so supported email and calendar clients can offer Accept or Decline. When SMTP2GO's WordPress mail plugin is active, calendar requests use its MIME API so the calendar content type is preserved. The configured SMTP2GO API key needs permission to send MIME email. An attendee's No cancels only their own placeholder. Closing a time cancels all its placeholders. Finalising sends a confirmed invitation to everyone who has not voted No for the chosen time and cancels other placeholders. Cancelling a poll cancels all outstanding placeholders.
 
@@ -37,7 +37,7 @@ The plugin stores attendee names, email addresses, votes, code hashes, session h
 
 == Changelog ==
 
-= 0.1.17 =
+= 0.1.18 =
 * Add daily historical poll cleanup with per-organiser retention days and manual deletion.
 * Add personal meeting templates and the Contacts add modal.
 * Rename the Create/Edit, Open/In-Progress and Contacts tabs.
