@@ -11,7 +11,9 @@ function tnmp_return_url() {
 function tnmp_redirect($code, $poll_id = 0) {
     $view = in_array($code, array('finalized', 'cancelled'), true) ? 'history' : (in_array($code, array('created', 'edited'), true) ? 'open' : '');
     if (strpos($code, 'settings_') === 0) { $view = 'settings'; }
+    if (in_array($code, array('deleted', 'delete_unavailable'), true)) { $view = 'history'; }
     if (strpos($code, 'contact_') === 0) { $view = 'contacts'; }
+    if (strpos($code, 'template_') === 0) { $view = 'templates'; }
     $url = add_query_arg(array('tnmp_notice' => $code, 'tnmp_poll' => (int) $poll_id), tnmp_return_url());
     if ($view !== '') { $url = add_query_arg('tnmp_view', $view, $url); }
     wp_safe_redirect($url);
@@ -125,16 +127,18 @@ function tnmp_save_settings() {
     $duration = wp_unslash($_POST['duration'] ?? '');
     $earliest = wp_unslash($_POST['earliest'] ?? '');
     $latest = wp_unslash($_POST['latest'] ?? '');
-    if (!is_scalar($duration) || !is_scalar($earliest) || !is_scalar($latest) || !preg_match('/^\d+$/D', (string) $duration) || !preg_match('/^\d+$/D', (string) $earliest) || !preg_match('/^\d+$/D', (string) $latest)) {
+    $retention_days = wp_unslash($_POST['retention_days'] ?? '');
+    if (!is_scalar($duration) || !is_scalar($earliest) || !is_scalar($latest) || !is_scalar($retention_days) || !preg_match('/^\d+$/D', (string) $duration) || !preg_match('/^\d+$/D', (string) $earliest) || !preg_match('/^\d+$/D', (string) $latest) || !preg_match('/^\d+$/D', (string) $retention_days)) {
         tnmp_redirect('settings_invalid');
     }
     $duration = (int) $duration;
     $earliest = (int) $earliest;
     $latest = (int) $latest;
-    if ($duration < 5 || $duration > 1440 || $duration % 5 !== 0 || $earliest < 0 || $earliest > 22 || $latest < 1 || $latest > 24 || $earliest >= $latest || $duration > ($latest - $earliest) * 60) {
+    $retention_days = (int) $retention_days;
+    if ($duration < 5 || $duration > 1440 || $duration % 5 !== 0 || $earliest < 0 || $earliest > 22 || $latest < 1 || $latest > 24 || $earliest >= $latest || $duration > ($latest - $earliest) * 60 || $retention_days < 1 || $retention_days > 3650) {
         tnmp_redirect('settings_invalid');
     }
-    update_user_meta(get_current_user_id(), 'tnmp_settings', array('duration' => $duration, 'earliest' => $earliest, 'latest' => $latest));
+    update_user_meta(get_current_user_id(), 'tnmp_settings', array('duration' => $duration, 'earliest' => $earliest, 'latest' => $latest, 'retention_days' => $retention_days));
     tnmp_redirect('settings_saved');
 }
 
@@ -168,6 +172,43 @@ function tnmp_contact_action() {
     tnmp_redirect($saved === false ? 'contact_duplicate' : 'contact_saved');
 }
 
+function tnmp_template_action() {
+    if (!is_user_logged_in() || !current_user_can('read')) {
+        wp_die('You must be logged in.', '', array('response' => 403));
+    }
+    check_admin_referer('tnmp_template');
+    global $wpdb;
+    $user_id = get_current_user_id();
+    $id = absint($_POST['template_id'] ?? 0);
+    $operation = sanitize_key(wp_unslash($_POST['operation'] ?? ''));
+    $existing = $id ? tnmp_get_template($id, $user_id) : null;
+    if ($operation === 'delete') {
+        if (!$existing) { tnmp_redirect('template_invalid'); }
+        $deleted = $wpdb->delete(tnmp_table('templates'), array('id' => $id, 'organiser_id' => $user_id));
+        tnmp_redirect($deleted ? 'template_deleted' : 'template_invalid');
+    }
+    if (!in_array($operation, array('add', 'edit'), true) || ($operation === 'edit' && !$existing)) {
+        tnmp_redirect('template_invalid');
+    }
+    $title = wp_unslash($_POST['title'] ?? '');
+    $description = wp_unslash($_POST['description'] ?? '');
+    $duration = wp_unslash($_POST['duration'] ?? '');
+    if (!is_scalar($title) || !is_scalar($description) || !is_scalar($duration) || !preg_match('/^\d+$/D', (string) $duration)) {
+        tnmp_redirect('template_invalid');
+    }
+    $title = sanitize_text_field($title);
+    $description = sanitize_textarea_field($description);
+    $duration = (int) $duration;
+    if ($title === '' || strlen($title) > 190 || $duration < 5 || $duration > 1440 || $duration % 5 !== 0) {
+        tnmp_redirect('template_invalid');
+    }
+    $data = array('title' => $title, 'description' => $description, 'duration' => $duration);
+    $saved = $operation === 'add'
+        ? $wpdb->insert(tnmp_table('templates'), array_merge(array('organiser_id' => $user_id), $data))
+        : $wpdb->update(tnmp_table('templates'), $data, array('id' => $id, 'organiser_id' => $user_id));
+    tnmp_redirect($saved === false ? 'template_invalid' : 'template_saved');
+}
+
 function tnmp_create() {
     if (!is_user_logged_in() || !current_user_can('read')) {
         wp_die('You must be logged in to create a meeting poll.', '', array('response' => 403));
@@ -197,7 +238,7 @@ function tnmp_create() {
     $wpdb->query('START TRANSACTION');
     $ok = $wpdb->insert(tnmp_table('polls'), array(
         'organiser_id' => get_current_user_id(), 'title' => $title, 'description' => $description,
-        'timezone' => $timezone, 'status' => 'open', 'final_slot_id' => 0, 'created_at' => tnmp_now(),
+        'timezone' => $timezone, 'status' => 'open', 'final_slot_id' => 0, 'created_at' => tnmp_now(), 'updated_at' => tnmp_now(),
     ));
     $poll_id = (int) $wpdb->insert_id;
     $slot_ids = array();
@@ -303,7 +344,7 @@ function tnmp_edit() {
         $wpdb->query('ROLLBACK');
         tnmp_redirect('already_closed', $poll_id);
     }
-    $ok = $wpdb->update(tnmp_table('polls'), array('title' => $title, 'description' => $description, 'timezone' => $timezone), array('id' => $poll_id)) !== false;
+    $ok = $wpdb->update(tnmp_table('polls'), array('title' => $title, 'description' => $description, 'timezone' => $timezone, 'updated_at' => tnmp_now()), array('id' => $poll_id)) !== false;
     foreach ($old_slots as $slot) {
         if (!isset($new_slot_keys[$slot->starts_at . '|' . $slot->ends_at])) {
             $ok = $ok && $wpdb->update(tnmp_table('slots'), array('status' => 'removed'), array('id' => $slot->id)) !== false;
@@ -419,7 +460,11 @@ function tnmp_manage() {
     if (!$poll || (int) $poll->organiser_id !== get_current_user_id()) {
         wp_die('You cannot manage this poll.', '', array('response' => 403));
     }
+    if ($action === 'delete') {
+        tnmp_redirect(tnmp_delete_historical_poll($poll_id, get_current_user_id()) ? 'deleted' : 'delete_unavailable');
+    }
     if ($action === 'retry') {
+        $wpdb->update(tnmp_table('polls'), array('updated_at' => tnmp_now()), array('id' => $poll_id));
         $wpdb->query($wpdb->prepare("UPDATE " . tnmp_table('jobs') . " SET state = 'pending', attempts = 0, available_at = %s, last_error = '' WHERE poll_id = %d AND state = 'failed'", tnmp_now(), $poll_id));
         tnmp_process_queue(3);
         tnmp_redirect('retry_queued', $poll_id);
@@ -435,6 +480,7 @@ function tnmp_manage() {
         $nonce = bin2hex(random_bytes(32));
         $token = tnmp_token_from_nonce($nonce);
         $wpdb->update(tnmp_table('attendees'), array('token_nonce' => $nonce, 'token_hash' => hash('sha256', $token), 'invite_state' => 'queued'), array('id' => $attendee->id));
+        $wpdb->update(tnmp_table('polls'), array('updated_at' => tnmp_now()), array('id' => $poll_id));
         tnmp_queue('invite', $poll_id, $attendee->id);
         tnmp_process_queue(3);
         tnmp_redirect('resent', $poll_id);
@@ -445,6 +491,7 @@ function tnmp_manage() {
             tnmp_redirect('invalid', $poll_id);
         }
         $wpdb->update(tnmp_table('slots'), array('status' => 'closed'), array('id' => $slot_id));
+        $wpdb->update(tnmp_table('polls'), array('updated_at' => tnmp_now()), array('id' => $poll_id));
         foreach (tnmp_get_attendees($poll_id) as $attendee) {
             tnmp_queue_event($attendee, $slot, 'cancel');
         }
@@ -456,7 +503,7 @@ function tnmp_manage() {
         if (!$slot || (int) $slot->poll_id !== $poll_id || $slot->status !== 'open') {
             tnmp_redirect('invalid', $poll_id);
         }
-        $wpdb->update(tnmp_table('polls'), array('status' => 'final', 'final_slot_id' => $slot_id), array('id' => $poll_id));
+        $wpdb->update(tnmp_table('polls'), array('status' => 'final', 'final_slot_id' => $slot_id, 'updated_at' => tnmp_now()), array('id' => $poll_id));
         foreach (tnmp_get_attendees($poll_id) as $attendee) {
             foreach (tnmp_get_slots($poll_id) as $item) {
                 if ((int) $item->id === $slot_id && tnmp_vote_choice($attendee->id, $slot_id) !== 'no') {
@@ -470,7 +517,7 @@ function tnmp_manage() {
         tnmp_redirect('finalized', $poll_id);
     }
     if ($action === 'cancel') {
-        $wpdb->update(tnmp_table('polls'), array('status' => 'cancelled'), array('id' => $poll_id));
+        $wpdb->update(tnmp_table('polls'), array('status' => 'cancelled', 'updated_at' => tnmp_now()), array('id' => $poll_id));
         foreach (tnmp_get_attendees($poll_id) as $attendee) {
             foreach (tnmp_get_slots($poll_id) as $slot) {
                 tnmp_queue_event($attendee, $slot, 'cancel');
@@ -601,6 +648,7 @@ function tnmp_save_vote($attendee) {
     if (!$ok) {
         return 'Your vote could not be saved. Please try again.';
     }
+    $wpdb->update(tnmp_table('polls'), array('updated_at' => tnmp_now()), array('id' => $poll->id));
     if ($attendee->holds) {
         tnmp_queue_event($attendee, $slot, $choice === 'no' ? 'cancel' : 'hold');
         tnmp_process_queue(3);

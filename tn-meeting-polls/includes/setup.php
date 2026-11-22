@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 
 add_action('init', 'tnmp_register_routes');
 add_action('init', 'tnmp_maybe_upgrade');
+add_action('init', 'tnmp_ensure_cron');
 add_filter('query_vars', 'tnmp_query_vars');
 add_action('template_redirect', 'tnmp_vote_page');
 add_action('admin_menu', 'tnmp_admin_menu');
@@ -14,8 +15,10 @@ add_action('admin_post_tnmp_edit', 'tnmp_edit');
 add_action('admin_post_tnmp_manage', 'tnmp_manage');
 add_action('admin_post_tnmp_save_settings', 'tnmp_save_settings');
 add_action('admin_post_tnmp_contact', 'tnmp_contact_action');
+add_action('admin_post_tnmp_template', 'tnmp_template_action');
 add_action('wp_ajax_tnmp_results', 'tnmp_ajax_results');
 add_action('tnmp_run_queue', 'tnmp_process_queue');
+add_action('tnmp_cleanup_history', 'tnmp_cleanup_history');
 add_filter('cron_schedules', 'tnmp_cron_schedules');
 
 function tnmp_register_routes() {
@@ -36,6 +39,7 @@ function tnmp_activate() {
 
 function tnmp_deactivate() {
     wp_clear_scheduled_hook('tnmp_run_queue');
+    wp_clear_scheduled_hook('tnmp_cleanup_history');
     flush_rewrite_rules();
 }
 
@@ -47,6 +51,9 @@ function tnmp_cron_schedules($schedules) {
 function tnmp_ensure_cron() {
     if (!wp_next_scheduled('tnmp_run_queue')) {
         wp_schedule_event(time() + 60, 'tnmp_minute', 'tnmp_run_queue');
+    }
+    if (!wp_next_scheduled('tnmp_cleanup_history')) {
+        wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'tnmp_cleanup_history');
     }
 }
 

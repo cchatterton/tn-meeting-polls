@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/views-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.15');
+define('TNMP_VERSION', '0.1.16');
 function current_user_can($capability) { return true; }
 function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower($value)); }
 function wp_unslash($value) { return $value; }
@@ -29,9 +29,15 @@ class FakeDb {
         if (strpos($query, 'tnmp_contacts') !== false) {
             return array((object) array('id' => 1, 'name' => 'Ada Lovelace', 'email' => 'ada@example.test'), (object) array('id' => 2, 'name' => 'Grace Hopper', 'email' => 'grace@example.test'));
         }
+        if (strpos($query, 'tnmp_templates') !== false) {
+            return array((object) array('id' => 5, 'title' => 'Planning template', 'description' => 'Review agenda', 'duration' => 75));
+        }
         return array();
     }
-    public function get_row($query) { return $GLOBALS['edit_poll'] ?? null; }
+    public function get_row($query) {
+        if (strpos($query, 'tnmp_templates') !== false) { return strpos($query, 'id = 5') !== false ? (object) array('id' => 5, 'title' => 'Planning template', 'description' => 'Review agenda', 'duration' => 75) : null; }
+        return $GLOBALS['edit_poll'] ?? null;
+    }
 }
 $wpdb = new FakeDb();
 require_once dirname(__DIR__) . '/tn-meeting-polls/includes/storage.php';
@@ -52,6 +58,7 @@ check_view(strpos($create, 'id="tnmp-contact-search"') !== false && strpos($crea
 check_view(strpos($create, 'data-earliest="0" data-latest="24"') !== false, 'create form preserves unrestricted meeting hours until settings are saved');
 check_view(strpos($create, 'value="Australia/Sydney" selected') !== false, 'WordPress named timezone is selected by default');
 check_view(strpos($create, 'id="tnmp-results"') === false, 'create view has no live results');
+check_view(strpos($create, '>Create/Edit</a>') !== false && strpos($create, '>Open/In-Progress</a>') !== false && strpos($create, '>Contacts</a>') !== false && strpos($create, '>Meeting templates</a>') !== false, 'navigation uses updated tab names');
 $GLOBALS['site_timezone'] = '+10:00';
 $offset_create = tnmp_render_app();
 check_view(strpos($offset_create, 'value="+10:00" selected') !== false, 'WordPress UTC-offset timezone remains selectable and selected');
@@ -71,11 +78,21 @@ check_view(strpos($contacts, 'data-confirm') === false, 'removing a contact has 
 check_view(strpos($contacts, '<table class="tnmp-contact-table">') !== false && substr_count($contacts, '<tbody><tr>') === 1 && substr_count($contacts, '</td></tr>') === 2, 'saved contacts are table rows');
 check_view((bool) preg_match('/<tr><td>.*?name="tnmp_contacts\[\]" value="1".*?<\/td><td>.*?form="tnmp-edit-contact-1".*?<\/td><td>.*?form="tnmp-edit-contact-1".*?<\/td><td>.*?Save<\/button>.*?Remove<\/button>.*?<\/td><\/tr>/s', $contacts), 'checkbox, name, email, save and remove share one row');
 check_view(strpos($contacts, 'id="tnmp-invite-selected"') !== false && strpos($contacts, 'form="tnmp-invite-selected" class="button button-primary">Invite selected</button>') !== false, 'selected contacts can open create poll');
+check_view(strpos($contacts, '<dialog id="tnmp-add-contact-dialog"') !== false && strpos($contacts, 'id="tnmp-open-contact-dialog">Add Contact</button>') !== false, 'add contact form opens from the contacts toolbar');
 $_GET['tnmp_view'] = 'create';
 $_GET['tnmp_contacts'] = array('2', '1', '1', '999');
 $selected_create = tnmp_render_app();
 check_view(substr_count($selected_create, 'class="tnmp-row tnmp-attendee-row"') === 2 && strpos($selected_create, 'value="ada@example.test"') !== false && strpos($selected_create, 'value="grace@example.test"') !== false, 'selected saved contacts prefill create poll without duplicates or unknown IDs');
 unset($_GET['tnmp_contacts']);
+$_GET['tnmp_view'] = 'templates';
+$templates = tnmp_render_app();
+check_view(strpos($templates, '<h2>Meeting templates</h2>') !== false && strpos($templates, 'Planning template') !== false && strpos($templates, 'Review agenda') !== false && strpos($templates, '75 mins') !== false, 'meeting templates table shows saved values');
+check_view(strpos($templates, 'data-template-id="5"') !== false && strpos($templates, 'value="delete"') !== false && strpos($templates, 'tnmp_template=5') !== false && strpos($templates, '<dialog id="tnmp-template-dialog"') !== false, 'template actions include edit, delete, open and modal');
+$_GET['tnmp_view'] = 'create';
+$_GET['tnmp_template'] = 5;
+$template_create = tnmp_render_app();
+check_view(strpos($template_create, 'name="title" maxlength="190" value="Planning template"') !== false && strpos($template_create, '<textarea name="description" rows="3" placeholder="Purpose, location, or meeting link">Review agenda</textarea>') !== false && strpos($template_create, 'name="duration" min="5" max="1440" step="5" value="75"') !== false, 'opening a template prefills the create form');
+unset($_GET['tnmp_template']);
 ob_start();
 tnmp_action_form(42, 3, 'close', 'Close time');
 $action_form = ob_get_clean();

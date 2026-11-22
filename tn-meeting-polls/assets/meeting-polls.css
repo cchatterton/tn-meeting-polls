@@ -61,6 +61,19 @@
 .tnmp-contact-table input[type="text"], .tnmp-contact-table input[type="email"] { width: 100%; }
 .tnmp-contact-actions { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
 .tnmp-contact-actions form { margin: 0; }
+.tnmp-contact-toolbar { display: flex; gap: 0.5rem; align-items: center; }
+.tnmp-contact-dialog { width: min(36rem, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); padding: 1.5rem; border: 0.0625rem solid var(--tnmp-border); border-radius: 0.5rem; box-shadow: 0 1rem 3rem rgba(0, 20, 35, 0.22); color: var(--tnmp-ink); }
+.tnmp-contact-dialog::backdrop { background: rgba(0, 20, 35, 0.55); }
+.tnmp-contact-dialog h3 { margin: 0 0 1rem; }
+.tnmp-contact-dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+.tnmp-template-fields label { display: block; margin-bottom: 0.75rem; font-weight: 600; }
+.tnmp-template-fields input, .tnmp-template-fields textarea { display: block; width: 100%; margin-top: 0.25rem; font-weight: 400; }
+.tnmp-template-table { min-width: 42rem; }
+.tnmp-template-table th:nth-child(1) { width: 22%; }
+.tnmp-template-table th:nth-child(3) { width: 7rem; }
+.tnmp-template-table th:nth-child(4) { width: 14rem; }
+.tnmp-template-actions { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+.tnmp-template-actions form { margin: 0; }
 .tnmp-remove-contact { color: #9b351f; }
 .tnmp-submit { margin: 1.375rem 0 0; }
 .tnmp-notice { border-left: 0.25rem solid #ff6b00; background: #f2f6f8; padding: 0.75rem 1rem; margin: 0.875rem 0; }

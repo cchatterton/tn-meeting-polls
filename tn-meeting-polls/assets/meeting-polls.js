@@ -26,6 +26,56 @@
     });
   });
 
+  var contactDialog = document.getElementById('tnmp-add-contact-dialog');
+  var openContactDialog = document.getElementById('tnmp-open-contact-dialog');
+  var closeContactDialog = document.getElementById('tnmp-close-contact-dialog');
+  if (contactDialog && openContactDialog && closeContactDialog) {
+    openContactDialog.addEventListener('click', function () {
+      contactDialog.showModal();
+      contactDialog.querySelector('input[name="name"]').focus();
+    });
+    closeContactDialog.addEventListener('click', function () { contactDialog.close(); });
+  }
+
+  var templateDialog = document.getElementById('tnmp-template-dialog');
+  var addTemplate = document.getElementById('tnmp-add-template');
+  var closeTemplate = document.getElementById('tnmp-close-template-dialog');
+  if (templateDialog && addTemplate && closeTemplate) {
+    var templateForm = templateDialog.querySelector('form');
+    var templateTitle = templateDialog.querySelector('#tnmp-template-dialog-title');
+    var templateSubmit = templateDialog.querySelector('#tnmp-save-template');
+    var templateOperation = templateForm.querySelector('input[name="operation"]');
+    var templateId = templateForm.querySelector('input[name="template_id"]');
+    var templateName = templateForm.querySelector('input[name="title"]');
+    var templateDescription = templateForm.querySelector('textarea[name="description"]');
+    var templateDuration = templateForm.querySelector('input[name="duration"]');
+    addTemplate.addEventListener('click', function () {
+      templateOperation.value = 'add';
+      templateId.value = '0';
+      templateName.value = '';
+      templateDescription.value = '';
+      templateDuration.value = templateDialog.dataset.defaultDuration;
+      templateTitle.textContent = 'Add meeting template';
+      templateSubmit.textContent = 'Add template';
+      templateDialog.showModal();
+      templateName.focus();
+    });
+    document.querySelectorAll('.tnmp-edit-template').forEach(function (button) {
+      button.addEventListener('click', function () {
+        templateOperation.value = 'edit';
+        templateId.value = button.dataset.templateId;
+        templateName.value = button.dataset.templateTitle;
+        templateDescription.value = button.dataset.templateDescription;
+        templateDuration.value = button.dataset.templateDuration;
+        templateTitle.textContent = 'Edit meeting template';
+        templateSubmit.textContent = 'Save template';
+        templateDialog.showModal();
+        templateName.focus();
+      });
+    });
+    closeTemplate.addEventListener('click', function () { templateDialog.close(); });
+  }
+
   var contactSearch = document.getElementById('tnmp-contact-search');
   var contactMatches = document.getElementById('tnmp-contact-matches');
   var attendeeRows = document.getElementById('tnmp-attendees');

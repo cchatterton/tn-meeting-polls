@@ -2,6 +2,13 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.16 - 2026-11-22
+
+- Add daily WP-Cron cleanup of historical polls using each organiser’s retention days since the poll’s last update. Existing polls receive a fresh retention window.
+- Add manual historical poll deletion after queued mail is complete, including related records.
+- Add meeting templates with add, edit, delete and open actions; opening a template prefills Create/Edit.
+- Move Add Contact into a modal beside Invite selected, and rename the Contacts, Create/Edit and Open/In-Progress tabs.
+
 ## 0.1.15 - 2026-11-22
 
 - Submit poll actions and contact removal directly without browser confirmation dialogs.
