@@ -1,7 +1,7 @@
 # TN Meeting Polls
 
 Author: Techn  
-Version: 0.1.5
+Version: 0.1.6
 Status: MVP  
 Branding mode: Author Branded
 
@@ -11,7 +11,7 @@ Create meeting-time polls for logged-in organisers and verified email voting for
 
 ## Use
 
-Activate the plugin and open **Meeting Polls** in WordPress. The Create, Open polls and History views are separate. In Create, the time zone defaults to the WordPress site setting. Set one meeting duration, choose a date, add one or more start times in 10-minute steps for that date, and add attendees from the single initial row. To give organisers a front-end dashboard, add `[tn_meeting_polls]` to a page. Voting links are emailed to attendees. Configure a reliable WordPress mail transport and a server cron that triggers WP-Cron on low-traffic sites.
+Activate the plugin and open **Meeting Polls** in WordPress. Create, Open polls, History, Attendees and Settings are separate views. Settings saves each organiser's default duration and earliest and latest meeting hours. Attendees stores a personal, alphabetical contact list. In Create, the time zone defaults to the WordPress site setting; choose dates and start times in 10-minute steps, then search saved contacts by name or email to add them to the poll. New attendee details can also be typed directly. To give organisers a front-end dashboard, add `[tn_meeting_polls]` to a page. Voting links are emailed to attendees. Configure a reliable WordPress mail transport and a server cron that triggers WP-Cron on low-traffic sites.
 
 ## Calendar behaviour
 
@@ -21,7 +21,7 @@ Calendar messages use stable attendee/time UIDs and revision sequences. WordPres
 
 ## Storage
 
-Six site-prefixed tables hold polls, slots, attendees, votes, event states and queued mail jobs. These tables support per-attendee/per-slot voting and calendar state with unique keys and bounded queue processing. Voting tokens are derived from site authentication salts and per-attendee random nonces; only their hashes are used for lookup. The plugin stores attendee names, emails, votes, hashed verification codes and session hashes. It does not automatically delete polls.
+Seven site-prefixed tables hold polls, slots, poll attendees, votes, event states, queued mail jobs and organisers' saved contacts. Meeting preferences are stored as user metadata. These tables support per-attendee/per-slot voting and calendar state with unique keys and bounded queue processing. Voting tokens are derived from site authentication salts and per-attendee random nonces; only their hashes are used for lookup. The plugin stores attendee names, emails, votes, hashed verification codes and session hashes. It does not automatically delete polls.
 
 ## Updates
 

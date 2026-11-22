@@ -120,11 +120,13 @@ function tnmp_mail_calendar_smtp2go($recipient, $subject, $ical, $method) {
     $key = $settings::getOption('smtp2go_api_key');
     $sender = $settings::getOption('smtp2go_from_address');
     if (!is_string($key) || $key === '' || !is_email($sender) || !is_email($recipient)) {
+        tnmp_delivery_error('SMTP2GO sender, recipient or API key is not configured.');
         return false;
     }
     $key_helper = new \SMTP2GO\App\SecureApiKeyHelper();
     $key = $key_helper->decryptKey($key);
     if (!is_string($key) || $key === '') {
+        tnmp_delivery_error('SMTP2GO API key could not be read.');
         return false;
     }
 
@@ -143,6 +145,7 @@ function tnmp_mail_calendar_smtp2go($recipient, $subject, $ical, $method) {
         $mailer->preSend();
         $mime = $mailer->getSentMIMEMessage();
     } catch (\Exception $e) {
+        tnmp_delivery_error('Calendar invitation could not be prepared.');
         return false;
     }
 
@@ -153,14 +156,30 @@ function tnmp_mail_calendar_smtp2go($recipient, $subject, $ical, $method) {
         'body' => wp_json_encode(array('mime_email' => base64_encode($mime))),
         'timeout' => 20,
     ));
-    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+    if (is_wp_error($response)) {
+        tnmp_delivery_error('SMTP2GO could not be reached.');
         return false;
     }
     $result = json_decode(wp_remote_retrieve_body($response), true);
-    return is_array($result)
+    $sent = wp_remote_retrieve_response_code($response) === 200
+        && is_array($result)
         && !empty($result['data']['succeeded'])
         && empty($result['data']['failed'])
         && empty($result['data']['failures']);
+    if (!$sent) {
+        $error_code = is_array($result) ? ($result['data']['error_code'] ?? '') : '';
+        $message = $error_code === 'E_ApiResponseCodes.ENDPOINT_PERMISSION_DENIED'
+            ? 'SMTP2GO API key needs Emails > /email/mime permission.'
+            : 'SMTP2GO rejected the calendar invitation. Check its API key and verified sender.';
+        tnmp_delivery_error($message);
+    }
+    return $sent;
+}
+
+function tnmp_delivery_error($message = null) {
+    static $error = '';
+    if ($message !== null) { $error = $message; }
+    return $error;
 }
 
 function tnmp_mail_invitation($poll, $attendee, $token) {
@@ -226,6 +245,7 @@ function tnmp_process_queue($limit = 20) {
         if (!$claimed) {
             continue;
         }
+        tnmp_delivery_error('');
         $result = tnmp_run_job($job);
         if ($result === true || $result === 'skip') {
             $wpdb->update($jobs_table, array('state' => 'done', 'last_error' => ''), array('id' => $job->id));
@@ -235,7 +255,7 @@ function tnmp_process_queue($limit = 20) {
                 'state' => $attempts >= 3 ? 'failed' : 'pending',
                 'attempts' => $attempts,
                 'available_at' => gmdate('Y-m-d H:i:s', time() + min(300, 60 * $attempts)),
-                'last_error' => 'wp_mail could not hand off the message',
+                'last_error' => tnmp_delivery_error() ?: 'Mail transport could not hand off the message.',
             ), array('id' => $job->id));
             if ($attempts >= 3 && $job->job_type === 'invite') {
                 $wpdb->update(tnmp_table('attendees'), array('invite_state' => 'failed'), array('id' => $job->attendee_id));

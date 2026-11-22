@@ -55,5 +55,8 @@ check(is_array($slots) && count($slots) === 3 && strtotime($slots[0][1]) - strto
 check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00', '09:00')), '60', 'Australia/Sydney') === false, 'duplicate proposed starts rejected');
 check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:35')), '60', 'Australia/Sydney') === false, 'start time outside 10-minute steps rejected');
 check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00')), '0', 'Australia/Sydney') === false, 'invalid duration rejected');
+check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00')), '60', 'Australia/Sydney', array('earliest' => 9, 'latest' => 17)) !== false, 'meeting inside preset hours accepted');
+check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('08:50')), '60', 'Australia/Sydney', array('earliest' => 9, 'latest' => 17)) === false, 'meeting before earliest hour rejected');
+check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('16:30')), '60', 'Australia/Sydney', array('earliest' => 9, 'latest' => 17)) === false, 'meeting ending after latest hour rejected');
 check(tnmp_valid_timezone('+10:00') && tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00')), '60', '+10:00') !== false, 'WordPress UTC-offset timezone is accepted for scheduling');
 echo "Calendar and time checks passed.\n";

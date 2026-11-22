@@ -10,6 +10,8 @@ function tnmp_return_url() {
 
 function tnmp_redirect($code, $poll_id = 0) {
     $view = in_array($code, array('finalized', 'cancelled'), true) ? 'history' : ($code === 'created' ? 'open' : '');
+    if (strpos($code, 'settings_') === 0) { $view = 'settings'; }
+    if (strpos($code, 'contact_') === 0) { $view = 'contacts'; }
     $url = add_query_arg(array('tnmp_notice' => $code, 'tnmp_poll' => (int) $poll_id), tnmp_return_url());
     if ($view !== '') { $url = add_query_arg('tnmp_view', $view, $url); }
     wp_safe_redirect($url);
@@ -32,7 +34,7 @@ function tnmp_valid_timezone($timezone) {
     return is_string($timezone) && (in_array($timezone, timezone_identifiers_list(DateTimeZone::ALL_WITH_BC), true) || (bool) preg_match('/^[+-](?:0\d|1[0-4]):[0-5]\d$/D', $timezone));
 }
 
-function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone) {
+function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, $hours = null) {
     if (!is_array($dates) || !is_array($times) || !$dates || count($dates) > 10 || count($dates) !== count($times) || array_diff_key($dates, $times) || !is_scalar($duration) || !preg_match('/^\d+$/D', (string) $duration)) {
         return false;
     }
@@ -53,10 +55,73 @@ function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone) {
             if (!$start || $start->getTimestamp() < time() + 300 || isset($seen[$start->format('Y-m-d H:i:s')])) { return false; }
             $seen[$start->format('Y-m-d H:i:s')] = true;
             $end = $start->modify('+' . $minutes . ' minutes');
+            if (is_array($hours)) {
+                $local_start = $start->setTimezone(new DateTimeZone($timezone));
+                $local_end = $end->setTimezone(new DateTimeZone($timezone));
+                $earliest = sprintf('%02d:00', $hours['earliest']);
+                $latest = sprintf('%02d:00', $hours['latest']);
+                $end_in_window = $hours['latest'] === 24
+                    ? ($local_end->format('Y-m-d') === $date || ($local_end->format('Y-m-d H:i') === (new DateTimeImmutable($date))->modify('+1 day')->format('Y-m-d') . ' 00:00'))
+                    : ($local_end->format('Y-m-d') === $date && $local_end->format('H:i') <= $latest);
+                if ($local_start->format('H:i') < $earliest || !$end_in_window) {
+                    return false;
+                }
+            }
             $slots[] = array($start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'));
         }
     }
     return $slots;
+}
+
+function tnmp_save_settings() {
+    if (!is_user_logged_in() || !current_user_can('read')) {
+        wp_die('You must be logged in.', '', array('response' => 403));
+    }
+    check_admin_referer('tnmp_save_settings');
+    $duration = wp_unslash($_POST['duration'] ?? '');
+    $earliest = wp_unslash($_POST['earliest'] ?? '');
+    $latest = wp_unslash($_POST['latest'] ?? '');
+    if (!is_scalar($duration) || !is_scalar($earliest) || !is_scalar($latest) || !preg_match('/^\d+$/D', (string) $duration) || !preg_match('/^\d+$/D', (string) $earliest) || !preg_match('/^\d+$/D', (string) $latest)) {
+        tnmp_redirect('settings_invalid');
+    }
+    $duration = (int) $duration;
+    $earliest = (int) $earliest;
+    $latest = (int) $latest;
+    if ($duration < 5 || $duration > 1440 || $duration % 5 !== 0 || $earliest < 0 || $earliest > 22 || $latest < 1 || $latest > 24 || $earliest >= $latest || $duration > ($latest - $earliest) * 60) {
+        tnmp_redirect('settings_invalid');
+    }
+    update_user_meta(get_current_user_id(), 'tnmp_settings', array('duration' => $duration, 'earliest' => $earliest, 'latest' => $latest));
+    tnmp_redirect('settings_saved');
+}
+
+function tnmp_contact_action() {
+    if (!is_user_logged_in() || !current_user_can('read')) {
+        wp_die('You must be logged in.', '', array('response' => 403));
+    }
+    check_admin_referer('tnmp_contact');
+    global $wpdb;
+    $user_id = get_current_user_id();
+    $id = absint($_POST['contact_id'] ?? 0);
+    $operation = sanitize_key(wp_unslash($_POST['operation'] ?? ''));
+    $existing = $id ? tnmp_get_contact($id, $user_id) : null;
+    if ($operation === 'delete') {
+        if (!$existing) { tnmp_redirect('contact_invalid'); }
+        $wpdb->delete(tnmp_table('contacts'), array('id' => $id, 'organiser_id' => $user_id));
+        tnmp_redirect('contact_deleted');
+    }
+    if (!in_array($operation, array('add', 'edit'), true) || ($operation === 'edit' && !$existing)) {
+        tnmp_redirect('contact_invalid');
+    }
+    $name = sanitize_text_field(wp_unslash($_POST['name'] ?? ''));
+    $email = sanitize_email(wp_unslash($_POST['email'] ?? ''));
+    if ($name === '' || strlen($name) > 190 || !is_email($email) || strlen($email) > 190) {
+        tnmp_redirect('contact_invalid');
+    }
+    $data = array('name' => $name, 'email' => $email);
+    $saved = $operation === 'add'
+        ? $wpdb->insert(tnmp_table('contacts'), array_merge(array('organiser_id' => $user_id), $data))
+        : $wpdb->update(tnmp_table('contacts'), $data, array('id' => $id, 'organiser_id' => $user_id));
+    tnmp_redirect($saved === false ? 'contact_duplicate' : 'contact_saved');
 }
 
 function tnmp_create() {
@@ -81,7 +146,7 @@ function tnmp_create() {
     if ($title === '' || strlen($title) > 190 || count($emails) > 50) {
         tnmp_redirect('invalid');
     }
-    $slots = tnmp_parse_proposed_slots($dates, $times, $duration, $timezone);
+    $slots = tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, tnmp_user_settings(get_current_user_id()));
     if ($slots === false) { tnmp_redirect('invalid_time'); }
     $attendees = array();
     $seen = array();

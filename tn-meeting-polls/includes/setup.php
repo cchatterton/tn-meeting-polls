@@ -4,12 +4,15 @@ if (!defined('ABSPATH')) {
 }
 
 add_action('init', 'tnmp_register_routes');
+add_action('init', 'tnmp_maybe_upgrade');
 add_filter('query_vars', 'tnmp_query_vars');
 add_action('template_redirect', 'tnmp_vote_page');
 add_action('admin_menu', 'tnmp_admin_menu');
 add_shortcode('tn_meeting_polls', 'tnmp_shortcode');
 add_action('admin_post_tnmp_create', 'tnmp_create');
 add_action('admin_post_tnmp_manage', 'tnmp_manage');
+add_action('admin_post_tnmp_save_settings', 'tnmp_save_settings');
+add_action('admin_post_tnmp_contact', 'tnmp_contact_action');
 add_action('wp_ajax_tnmp_results', 'tnmp_ajax_results');
 add_action('tnmp_run_queue', 'tnmp_process_queue');
 add_filter('cron_schedules', 'tnmp_cron_schedules');

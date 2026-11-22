@@ -47,6 +47,17 @@
 .tnmp-row label { display: block; min-width: 11.25rem; flex: 1; font-weight: 600; }
 .tnmp-row input[type="text"], .tnmp-row input[type="email"], .tnmp-row input[type="time"] { width: 100%; margin-top: 0.25rem; }
 .tnmp-row .tnmp-check { flex: 0 0 11.25rem; align-self: center; font-weight: 400; }
+.tnmp-contact-picker { max-width: 38rem; margin: 0 0 1rem; }
+.tnmp-contact-picker > label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
+.tnmp-contact-picker > input { width: 100%; }
+.tnmp-contact-matches { margin-top: 0.4rem; }
+.tnmp-contact-match { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5rem; border-bottom: 0.0625rem solid var(--tnmp-border); }
+.tnmp-contact-match[hidden] { display: none; }
+.tnmp-contact-match small { display: block; color: var(--tnmp-muted); }
+.tnmp-saved-contact { padding: 0.75rem 1rem; margin-bottom: 0.6rem; }
+.tnmp-saved-contact form { margin: 0; }
+.tnmp-saved-contact .tnmp-row { margin-bottom: 0.3rem; }
+.tnmp-remove-contact { color: #9b351f; }
 .tnmp-submit { margin: 1.375rem 0 0; }
 .tnmp-notice { border-left: 0.25rem solid #ff6b00; background: #f2f6f8; padding: 0.75rem 1rem; margin: 0.875rem 0; }
 .tnmp-poll-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }

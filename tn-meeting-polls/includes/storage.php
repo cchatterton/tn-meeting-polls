@@ -18,6 +18,7 @@ function tnmp_install_tables() {
     $votes = tnmp_table('votes');
     $events = tnmp_table('events');
     $jobs = tnmp_table('jobs');
+    $contacts = tnmp_table('contacts');
     dbDelta("CREATE TABLE $polls (
         id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
         organiser_id bigint(20) unsigned NOT NULL,
@@ -91,7 +92,45 @@ function tnmp_install_tables() {
         KEY ready (state,available_at),
         KEY poll_id (poll_id)
     ) $charset;");
+    dbDelta("CREATE TABLE $contacts (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        organiser_id bigint(20) unsigned NOT NULL,
+        name varchar(190) NOT NULL,
+        email varchar(190) NOT NULL,
+        PRIMARY KEY  (id),
+        UNIQUE KEY organiser_email (organiser_id,email),
+        KEY organiser_name (organiser_id,name)
+    ) $charset;");
     update_option('tnmp_db_version', TNMP_VERSION, false);
+}
+
+function tnmp_maybe_upgrade() {
+    if (get_option('tnmp_db_version') !== TNMP_VERSION) {
+        tnmp_install_tables();
+    }
+}
+
+function tnmp_user_settings($user_id) {
+    $saved = get_user_meta($user_id, 'tnmp_settings', true);
+    $saved = is_array($saved) ? $saved : array();
+    $duration = (int) ($saved['duration'] ?? 60);
+    $earliest = (int) ($saved['earliest'] ?? 0);
+    $latest = (int) ($saved['latest'] ?? 24);
+    if ($earliest < 0 || $earliest > 22 || $latest < 1 || $latest > 24 || $latest <= $earliest) {
+        $earliest = 0;
+        $latest = 24;
+    }
+    return array('duration' => $duration >= 5 && $duration <= 1440 && $duration % 5 === 0 ? $duration : 60, 'earliest' => $earliest, 'latest' => $latest);
+}
+
+function tnmp_get_contacts($user_id) {
+    global $wpdb;
+    return $wpdb->get_results($wpdb->prepare('SELECT id, name, email FROM ' . tnmp_table('contacts') . ' WHERE organiser_id = %d ORDER BY name ASC, email ASC', $user_id));
+}
+
+function tnmp_get_contact($id, $user_id) {
+    global $wpdb;
+    return $wpdb->get_row($wpdb->prepare('SELECT id, name, email FROM ' . tnmp_table('contacts') . ' WHERE id = %d AND organiser_id = %d', $id, $user_id));
 }
 
 function tnmp_now() {

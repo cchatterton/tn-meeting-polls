@@ -1,7 +1,7 @@
 <?php
 // Run with php tests/views-smoke.php from the repository root.
 define('ABSPATH', __DIR__ . '/');
-define('TNMP_VERSION', '0.1.5');
+define('TNMP_VERSION', '0.1.6');
 function current_user_can($capability) { return true; }
 function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower($value)); }
 function wp_unslash($value) { return $value; }
@@ -16,13 +16,21 @@ function wp_timezone_string() { return $GLOBALS['site_timezone'] ?? 'Australia/S
 function selected($actual, $expected, $echo) { return $actual === $expected ? ' selected' : ''; }
 function wp_nonce_field($action) { echo '<input type="hidden" value="nonce">'; }
 function get_current_user_id() { return 7; }
-function tnmp_table($name) { return 'wp_tnmp_' . $name; }
+function get_user_meta($id, $key, $single) { return $GLOBALS['user_settings'] ?? array(); }
 class FakeDb {
     public $query = '';
+    public $prefix = 'wp_';
     public function prepare($query, $user_id) { return str_replace('%d', (string) $user_id, $query); }
-    public function get_results($query) { $this->query = $query; return array(); }
+    public function get_results($query) {
+        $this->query = $query;
+        if (strpos($query, 'tnmp_contacts') !== false) {
+            return array((object) array('id' => 1, 'name' => 'Ada Lovelace', 'email' => 'ada@example.test'), (object) array('id' => 2, 'name' => 'Grace Hopper', 'email' => 'grace@example.test'));
+        }
+        return array();
+    }
 }
 $wpdb = new FakeDb();
+require_once dirname(__DIR__) . '/tn-meeting-polls/includes/storage.php';
 require_once dirname(__DIR__) . '/tn-meeting-polls/includes/actions.php';
 require_once dirname(__DIR__) . '/tn-meeting-polls/includes/views.php';
 
@@ -36,6 +44,8 @@ check_view(strpos($create, 'name="duration"') !== false && substr_count($create,
 check_view(strpos($create, 'name="duration"') < strpos($create, 'name="dates[0]"') && strpos($create, 'name="dates[0]"') < strpos($create, 'name="times[0][]"'), 'create fields follow duration, date, time order');
 check_view(strpos($create, 'name="times[0][]" step="600"') !== false, 'start time picker uses 10-minute steps');
 check_view(substr_count($create, 'name="emails[]"') === 1, 'create view starts with one attendee slot');
+check_view(strpos($create, 'id="tnmp-contact-search"') !== false && strpos($create, 'data-email="ada@example.test"') !== false && strpos($create, 'tnmp-pick-contact') !== false, 'create form offers searchable saved contacts');
+check_view(strpos($create, 'data-earliest="0" data-latest="24"') !== false, 'create form preserves unrestricted meeting hours until settings are saved');
 check_view(strpos($create, 'value="Australia/Sydney" selected') !== false, 'WordPress named timezone is selected by default');
 check_view(strpos($create, 'id="tnmp-results"') === false, 'create view has no live results');
 $GLOBALS['site_timezone'] = '+10:00';
@@ -49,4 +59,15 @@ check_view(strpos($open, 'id="tnmp-results"') !== false && strpos($wpdb->query, 
 $_GET['tnmp_view'] = 'history';
 $history = tnmp_render_app();
 check_view(strpos($history, 'id="tnmp-results"') === false && strpos($wpdb->query, "status IN ('final','cancelled')") !== false, 'history view shows closed polls without live refresh');
+$_GET['tnmp_view'] = 'contacts';
+$contacts = tnmp_render_app();
+check_view(strpos($contacts, 'Ada Lovelace') < strpos($contacts, 'Grace Hopper') && strpos($wpdb->query, 'ORDER BY name ASC, email ASC') !== false, 'contacts are shown alphabetically');
+check_view(strpos($contacts, 'value="edit"') !== false && strpos($contacts, 'value="delete"') !== false && strpos($contacts, 'value="add"') !== false, 'contacts can be added, edited and removed');
+$_GET['tnmp_view'] = 'settings';
+$settings = tnmp_render_app();
+check_view(strpos($settings, 'Default meeting length') !== false && strpos($settings, 'Earliest meeting hour') !== false && strpos($settings, 'Latest meeting hour') !== false, 'settings tab exposes requested preferences');
+$GLOBALS['user_settings'] = array('duration' => 90, 'earliest' => 8, 'latest' => 18);
+$_GET['tnmp_view'] = 'create';
+$preset_create = tnmp_render_app();
+check_view(strpos($preset_create, 'name="duration" min="5" max="1440" step="5" value="90"') !== false && strpos($preset_create, 'data-earliest="8" data-latest="18"') !== false, 'create form applies organiser presets');
 echo "Poll views and creation fields passed.\n";

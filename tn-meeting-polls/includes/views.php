@@ -16,6 +16,12 @@ function tnmp_notice_text($code) {
         'already_closed' => 'This poll is no longer open.',
         'resent' => 'A new voting link was queued. The earlier link has been replaced.',
         'retry_queued' => 'Failed email messages have been queued for another attempt.',
+        'settings_saved' => 'Meeting defaults saved.',
+        'settings_invalid' => 'Check the duration and meeting hours. The duration must fit within the hours.',
+        'contact_saved' => 'Contact saved.',
+        'contact_deleted' => 'Contact removed. Existing polls are unchanged.',
+        'contact_invalid' => 'Enter a name and valid email address for this contact.',
+        'contact_duplicate' => 'That email address is already in your contacts.',
     );
     return $notices[$code] ?? '';
 }
@@ -40,20 +46,26 @@ function tnmp_render_app() {
     $code = sanitize_key(wp_unslash($_GET['tnmp_notice'] ?? ''));
     $notice = tnmp_notice_text($code);
     $view = sanitize_key(wp_unslash($_GET['tnmp_view'] ?? 'open'));
-    if (!in_array($view, array('create', 'open', 'history'), true)) { $view = 'open'; }
+    if (!in_array($view, array('create', 'open', 'history', 'settings', 'contacts'), true)) { $view = 'open'; }
     ob_start();
     if ($notice) {
         echo '<div class="notice notice-info tnmp-notice" role="status"><p>' . esc_html($notice) . '</p></div>';
     }
     echo '<header class="tnmp-hero"><div><p class="tnmp-hero-eyebrow">PLAN. VOTE. MEET.</p><h2>Meeting Polls</h2><p>Find a time that works, with verified votes and optional calendar holds.</p></div><span class="tnmp-version" aria-label="' . esc_attr('Version ' . TNMP_VERSION) . '">v' . esc_html(TNMP_VERSION) . '</span></header>';
     echo '<nav class="tnmp-view-nav" aria-label="Meeting poll views">';
-    foreach (array('create' => 'Create a poll', 'open' => 'Open polls', 'history' => 'History') as $key => $label) {
+    foreach (array('create' => 'Create a poll', 'open' => 'Open polls', 'history' => 'History', 'contacts' => 'Attendees', 'settings' => 'Settings') as $key => $label) {
         echo '<a href="' . esc_url(tnmp_view_url($key)) . '"' . ($view === $key ? ' aria-current="page"' : '') . '>' . esc_html($label) . '</a>';
     }
     echo '</nav>';
     if ($view === 'create') {
         echo '<h2>Create a meeting poll</h2>';
         tnmp_render_create_form();
+    } elseif ($view === 'contacts') {
+        echo '<h2>Attendees</h2>';
+        tnmp_render_contacts();
+    } elseif ($view === 'settings') {
+        echo '<h2>Settings</h2>';
+        tnmp_render_settings();
     } else {
         echo '<h2>' . ($view === 'open' ? 'Open polls' : 'History') . '</h2>';
         if ($view === 'open') { echo '<p id="tnmp-refresh-status" class="tnmp-refresh-status" role="status" aria-live="polite"></p>'; }
@@ -79,6 +91,7 @@ function tnmp_return_field() {
 }
 
 function tnmp_render_create_form() {
+    $settings = tnmp_user_settings(get_current_user_id());
     $zone = wp_timezone_string() ?: 'UTC';
     if (!tnmp_valid_timezone($zone)) { $zone = 'UTC'; }
     $timezone_options = timezone_identifiers_list();
@@ -96,17 +109,71 @@ function tnmp_render_create_form() {
         echo '<option value="' . esc_attr($timezone) . '"' . selected($timezone, $zone, false) . '>' . esc_html($timezone) . '</option>';
     }
     echo '</select></label>';
-    echo '<label>Meeting duration (minutes) <input type="number" name="duration" min="5" max="1440" step="5" value="60" required></label>';
+    echo '<label>Meeting duration (minutes) <input type="number" name="duration" min="5" max="1440" step="5" value="' . (int) $settings['duration'] . '" required></label>';
+    echo '<p class="tnmp-muted">Your meeting hours are ' . esc_html(tnmp_hour_label($settings['earliest'])) . ' to ' . esc_html(tnmp_hour_label($settings['latest'])) . '. Change them in Settings.</p>';
     echo '<h3>Proposed dates and times</h3><p>Pick a date, then add one or more start times in 10-minute steps. The duration applies to every proposed time. Up to 10 options total.</p>';
-    echo '<div id="tnmp-dates">';
+    echo '<div id="tnmp-dates" data-earliest="' . (int) $settings['earliest'] . '" data-latest="' . (int) $settings['latest'] . '">';
     tnmp_date_group(0);
     echo '</div><button type="button" class="button" id="tnmp-add-date">Add date</button>';
     echo '<h3>Attendees</h3><p>Select “Send placeholders” only for people who should receive one tentative calendar invitation per proposed time.</p>';
+    $contacts = tnmp_get_contacts(get_current_user_id());
+    if ($contacts) {
+        echo '<div class="tnmp-contact-picker"><label for="tnmp-contact-search">Find an attendee in your contacts</label><input id="tnmp-contact-search" type="search" autocomplete="off" placeholder="Type a name or email" aria-controls="tnmp-contact-matches">';
+        echo '<div id="tnmp-contact-matches" class="tnmp-contact-matches" aria-live="polite">';
+        foreach ($contacts as $contact) {
+            echo '<div class="tnmp-contact-match" data-name="' . esc_attr($contact->name) . '" data-email="' . esc_attr($contact->email) . '" hidden><span>' . esc_html($contact->name) . ' <small>' . esc_html($contact->email) . '</small></span><button type="button" class="button tnmp-pick-contact">Add</button></div>';
+        }
+        echo '</div></div>';
+    } else {
+        echo '<p class="tnmp-muted">Add people in the Attendees tab to select them here, or enter an email below.</p>';
+    }
     echo '<div id="tnmp-attendees">';
     tnmp_attendee_row(0, true);
     echo '</div><button type="button" class="button tnmp-add" data-target="tnmp-attendees" data-limit="50">Add attendee</button>';
     echo '<p class="tnmp-submit"><button type="submit" class="button button-primary">Create poll and send invitations</button></p>';
     echo '</form>';
+}
+
+function tnmp_hour_label($hour) {
+    return sprintf('%02d:00', $hour);
+}
+
+function tnmp_render_settings() {
+    $settings = tnmp_user_settings(get_current_user_id());
+    echo '<form class="tnmp-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_save_settings">';
+    wp_nonce_field('tnmp_save_settings');
+    tnmp_return_field();
+    echo '<p>These defaults are saved for your account. Proposed meetings must start at or after the earliest hour and finish by the latest hour.</p>';
+    echo '<label>Default meeting length (minutes) <input type="number" name="duration" min="5" max="1440" step="5" value="' . (int) $settings['duration'] . '" required></label>';
+    foreach (array('earliest' => 'Earliest meeting hour', 'latest' => 'Latest meeting hour') as $field => $label) {
+        echo '<label>' . esc_html($label) . '<select name="' . esc_attr($field) . '">';
+        for ($hour = $field === 'earliest' ? 0 : 1; $hour <= ($field === 'earliest' ? 22 : 24); $hour++) {
+            echo '<option value="' . (int) $hour . '"' . selected($hour, $settings[$field], false) . '>' . esc_html(tnmp_hour_label($hour)) . '</option>';
+        }
+        echo '</select></label>';
+    }
+    echo '<p class="tnmp-submit"><button type="submit" class="button button-primary">Save settings</button></p></form>';
+}
+
+function tnmp_render_contacts() {
+    $contacts = tnmp_get_contacts(get_current_user_id());
+    echo '<form class="tnmp-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="add">';
+    wp_nonce_field('tnmp_contact');
+    tnmp_return_field();
+    echo '<h3>Add attendee</h3><div class="tnmp-row"><label>Name <input type="text" name="name" maxlength="190" required></label><label>Email <input type="email" name="email" maxlength="190" required></label></div><button type="submit" class="button button-primary">Add to contacts</button></form>';
+    if (!$contacts) { echo '<p>No attendees in your contacts yet.</p>'; return; }
+    echo '<div class="tnmp-contact-list">';
+    foreach ($contacts as $contact) {
+        echo '<div class="tnmp-card tnmp-saved-contact"><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="edit"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
+        wp_nonce_field('tnmp_contact');
+        tnmp_return_field();
+        echo '<div class="tnmp-row"><label>Name <input type="text" name="name" maxlength="190" value="' . esc_attr($contact->name) . '" required></label><label>Email <input type="email" name="email" maxlength="190" value="' . esc_attr($contact->email) . '" required></label><button type="submit" class="button">Save</button></div></form>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" data-confirm="Remove this attendee from your contacts? Existing polls will be unchanged."><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="delete"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
+        wp_nonce_field('tnmp_contact');
+        tnmp_return_field();
+        echo '<button type="submit" class="button tnmp-remove-contact">Remove</button></form></div>';
+    }
+    echo '</div>';
 }
 
 function tnmp_date_group($index) {
@@ -154,6 +221,7 @@ function tnmp_render_poll_card($poll) {
         $counts[$vote->slot_id][$vote->choice] = ($counts[$vote->slot_id][$vote->choice] ?? 0) + 1;
     }
     $failed = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM " . tnmp_table('jobs') . " WHERE poll_id = %d AND state = 'failed'", $poll->id));
+    $mail_error = $wpdb->get_var($wpdb->prepare("SELECT last_error FROM " . tnmp_table('jobs') . " WHERE poll_id = %d AND state IN ('pending','failed') AND last_error <> '' ORDER BY id DESC LIMIT 1", $poll->id));
     echo '<section class="tnmp-card tnmp-poll" data-poll-id="' . (int) $poll->id . '">';
     echo '<div class="tnmp-poll-head"><h3>' . esc_html($poll->title) . '</h3><span class="tnmp-status">' . esc_html(ucfirst($poll->status)) . '</span></div>';
     if ($poll->description !== '') {
@@ -164,6 +232,7 @@ function tnmp_render_poll_card($poll) {
         echo ' · <strong>' . $failed . ' failed email message(s)</strong>';
     }
     echo '</p>';
+    if ($mail_error) { echo '<p class="tnmp-notice" role="status">Calendar or invitation delivery issue: ' . esc_html($mail_error) . '</p>'; }
     if ($failed) {
         tnmp_action_form($poll->id, 0, 'retry', 'Retry failed emails', 'Retry failed email messages for this poll?');
     }

@@ -2,6 +2,13 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.6 - 2026-11-22
+
+- Add per-organiser meeting duration and earliest/latest hour settings.
+- Add a personal, alphabetical attendee contact list with add, edit and remove actions.
+- Search saved contacts and add them to a new poll without retyping names and email addresses.
+- Show SMTP2GO MIME permission failures on the poll while delivery retries are pending.
+
 ## 0.1.5 - 2026-11-22
 
 - Offer and validate meeting start times in 10-minute steps.
