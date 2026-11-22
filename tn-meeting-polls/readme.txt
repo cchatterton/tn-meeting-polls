@@ -3,7 +3,7 @@ Contributors:
 Tags: scheduling, meetings, polls, calendar
 Requires at least: 7.0
 Requires PHP: 7.4
-Stable tag: 0.1.1
+Stable tag: 0.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,9 @@ Invitation and calendar mail is queued and processed through WP-Cron. On low-tra
 The plugin stores attendee names, email addresses, votes, code hashes, session hashes and calendar delivery state in site database tables. Codes expire after 10 minutes. Verified voting sessions expire after 24 hours. The plugin does not delete polls automatically.
 
 == Changelog ==
+
+= 0.1.2 =
+* Publish the verified installable package and catalog release record.
 
 = 0.1.1 =
 * Add Techn release metadata, licence, controller integration and branded interface refinements.
