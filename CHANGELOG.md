@@ -2,6 +2,11 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.19 - 2026-11-22
+
+- Treat preferred meeting hours as time-picker navigation hints instead of save restrictions.
+- Seed an empty native time picker at a ten-minute value so it does not display the current off-step minute.
+
 ## 0.1.18 - 2026-11-22
 
 - Show poll cards as an accordion, with one poll open at a time and the first poll open initially.

@@ -148,18 +148,18 @@
 
   var dates = document.getElementById('tnmp-dates');
   if (dates) {
-    var duration = document.querySelector('input[name="duration"]');
-    var updateTimeBounds = function () {
-      if (dates.dataset.editing === '1') return;
+    // Chromium can add the current minute to its native time picker even with
+    // step="600". Seed an empty picker with a valid value before it opens.
+    dates.addEventListener('pointerdown', function (event) {
+      var input = event.target.closest('input[type="time"]');
+      if (!input || input.value) return;
+      var now = new Date();
+      var rounded = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 10) * 10;
       var earliest = Number(dates.dataset.earliest) * 60;
-      var latest = Number(dates.dataset.latest) * 60 - Number(duration.value || 0);
-      var minimum = String(Math.floor(earliest / 60)).padStart(2, '0') + ':' + String(earliest % 60).padStart(2, '0');
-      var maximum = String(Math.max(0, Math.floor(latest / 60))).padStart(2, '0') + ':' + String(Math.max(0, latest % 60)).padStart(2, '0');
-      dates.querySelectorAll('input[type="time"]').forEach(function (input) {
-        input.min = minimum;
-        input.max = maximum;
-      });
-    };
+      var latest = Number(dates.dataset.latest) * 60;
+      if (rounded < earliest || rounded > latest) rounded = earliest;
+      input.value = String(Math.floor(rounded / 60)).padStart(2, '0') + ':' + String(rounded % 60).padStart(2, '0');
+    });
     var updateSlotButtons = function () {
       var full = dates.querySelectorAll('.tnmp-time-row').length >= 10;
       dates.querySelectorAll('.tnmp-add-time').forEach(function (button) { button.disabled = full; });
@@ -199,7 +199,6 @@
       var closed = row.querySelector('.tnmp-closed');
       if (closed) closed.remove();
       group.querySelector('.tnmp-times').appendChild(row);
-      updateTimeBounds();
       updateSlotButtons();
     });
     document.getElementById('tnmp-add-date').addEventListener('click', function () {
@@ -218,11 +217,8 @@
       var closed = group.querySelector('.tnmp-closed');
       if (closed) closed.remove();
       dates.appendChild(group);
-      updateTimeBounds();
       updateSlotButtons();
     });
-    if (duration) duration.addEventListener('input', updateTimeBounds);
-    updateTimeBounds();
     updateSlotButtons();
   }
 

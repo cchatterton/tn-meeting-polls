@@ -155,7 +155,7 @@ function tnmp_render_create_form($poll = null) {
     echo '</select></label>';
     echo '<label>Meeting duration (minutes) <input type="number" name="duration" min="5" max="1440" step="5" value="' . (int) $duration . '" required></label>';
     if ($mixed_duration) { echo '<p class="tnmp-notice">This older poll has different durations. Saving will apply the duration above to every proposed time and replace times whose duration changes.</p>'; }
-    echo '<p class="tnmp-muted">Your meeting hours are ' . esc_html(tnmp_hour_label($settings['earliest'])) . ' to ' . esc_html(tnmp_hour_label($settings['latest'])) . '. Change them in Settings.</p>';
+    echo '<p class="tnmp-muted">Preferred hours for opening the time picker: ' . esc_html(tnmp_hour_label($settings['earliest'])) . ' to ' . esc_html(tnmp_hour_label($settings['latest'])) . '.</p>';
     echo '<h3>Proposed dates and times</h3><p>Pick a date, then add one or more start times in 10-minute steps. The duration applies to every proposed time. Up to 10 options total.</p>';
     echo '<div id="tnmp-dates" data-earliest="' . (int) $settings['earliest'] . '" data-latest="' . (int) $settings['latest'] . '" data-editing="' . ($poll ? '1' : '0') . '">';
     if ($groups) {
@@ -194,7 +194,7 @@ function tnmp_render_settings() {
     echo '<form class="tnmp-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_save_settings">';
     wp_nonce_field('tnmp_save_settings');
     tnmp_return_field();
-    echo '<p>These defaults are saved for your account. Proposed meetings must start at or after the earliest hour and finish by the latest hour.</p>';
+    echo '<p>These defaults are saved for your account. The preferred hours help position the time picker and do not restrict the times you can choose.</p>';
     echo '<label>Default meeting length (minutes) <input type="number" name="duration" min="5" max="1440" step="5" value="' . (int) $settings['duration'] . '" required></label>';
     foreach (array('earliest' => 'Earliest meeting hour', 'latest' => 'Latest meeting hour') as $field => $label) {
         echo '<label>' . esc_html($label) . '<select name="' . esc_attr($field) . '">';

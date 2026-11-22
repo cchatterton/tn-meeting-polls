@@ -64,18 +64,6 @@ function tnmp_parse_proposed_slots($dates, $times, $duration, $timezone, $hours 
             $unchanged = isset($existing[$start->format('Y-m-d H:i:s') . '|' . $end->format('Y-m-d H:i:s')]);
             if (!$unchanged && ((int) substr($time, 3, 2)) % 10 !== 0) { return false; }
             if (!$unchanged && $start->getTimestamp() < time() + 300) { return false; }
-            if (!$unchanged && is_array($hours)) {
-                $local_start = $start->setTimezone(new DateTimeZone($timezone));
-                $local_end = $end->setTimezone(new DateTimeZone($timezone));
-                $earliest = sprintf('%02d:00', $hours['earliest']);
-                $latest = sprintf('%02d:00', $hours['latest']);
-                $end_in_window = $hours['latest'] === 24
-                    ? ($local_end->format('Y-m-d') === $date || ($local_end->format('Y-m-d H:i') === (new DateTimeImmutable($date))->modify('+1 day')->format('Y-m-d') . ' 00:00'))
-                    : ($local_end->format('Y-m-d') === $date && $local_end->format('H:i') <= $latest);
-                if ($local_start->format('H:i') < $earliest || !$end_in_window) {
-                    return false;
-                }
-            }
             $slots[] = array($start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s'));
         }
     }

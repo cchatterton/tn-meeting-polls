@@ -60,8 +60,8 @@ check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00
 check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:35')), '60', 'Australia/Sydney') === false, 'start time outside 10-minute steps rejected');
 check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00')), '0', 'Australia/Sydney') === false, 'invalid duration rejected');
 check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('09:00')), '60', 'Australia/Sydney', array('earliest' => 9, 'latest' => 17)) !== false, 'meeting inside preset hours accepted');
-check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('08:50')), '60', 'Australia/Sydney', array('earliest' => 9, 'latest' => 17)) === false, 'meeting before earliest hour rejected');
-check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('16:30')), '60', 'Australia/Sydney', array('earliest' => 9, 'latest' => 17)) === false, 'meeting ending after latest hour rejected');
+check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('08:50')), '60', 'Australia/Sydney', array('earliest' => 9, 'latest' => 17)) !== false, 'preferred earliest hour is not a save restriction');
+check(tnmp_parse_proposed_slots(array(0 => $first_date), array(0 => array('17:00')), '60', 'Australia/Sydney', array('earliest' => 9, 'latest' => 17)) !== false, 'meeting may start at the preferred latest hour and finish later');
 $past = new DateTimeImmutable('-1 day', new DateTimeZone('Australia/Sydney'));
 $past_start = $past->setTime(9, 0)->setTimezone(new DateTimeZone('UTC'));
 $past_slot = (object) array('starts_at' => $past_start->format('Y-m-d H:i:s'), 'ends_at' => $past_start->modify('+60 minutes')->format('Y-m-d H:i:s'));
