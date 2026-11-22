@@ -73,7 +73,10 @@
 .tnmp-final { color: #176133; font-weight: 600; }
 .tnmp-vote-body { background: #f2f6f8; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .tnmp-vote-shell { max-width: 47.5rem; margin: 0 auto; padding: 1.5rem 1rem 3.75rem; }
-.tnmp-vote-shell h1 { margin: 0.3125rem 0 0.625rem; font-size: clamp(1.625rem, 5vw, 2.25rem); }
+.tnmp-vote-header { margin-bottom: 1.5rem; }
+.tnmp-vote-shell h1 { margin: 0 0 0.625rem; font-size: clamp(1.625rem, 5vw, 2.25rem); }
+.tnmp-title-duration { font-size: 0.6em; font-weight: 500; white-space: nowrap; }
+.tnmp-vote-description { margin: 0; }
 .tnmp-voter-meta { margin: 0 0 0.75rem; }
 .tnmp-vote-shell button { cursor: pointer; border: 0.0625rem solid #002840; border-radius: 0.3125rem; padding: 0.625rem 0.9375rem; background: #002840; color: white; font: inherit; }
 .tnmp-verify-row, .tnmp-code-form { display: flex; align-items: stretch; gap: 0.5rem; min-width: 0; }
@@ -84,7 +87,6 @@
 .tnmp-code-input { flex: 1; min-width: 0; }
 .tnmp-code-input input { display: block; width: 100%; height: 100%; padding: 0.5rem; font-size: 1rem; }
 .tnmp-visually-hidden { position: absolute; width: 0.0625rem; height: 0.0625rem; padding: 0; margin: -0.0625rem; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-.tnmp-vote-duration { font-weight: 600; margin: 0.75rem 0 0.25rem; }
 .tnmp-vote-day { margin-top: 1.5rem; }
 .tnmp-vote-day > h3 { margin: 0 0 0.25rem; font-size: 1.25rem; }
 .tnmp-vote-slot { display: grid; grid-template-columns: minmax(5.5rem, 7rem) minmax(0, 1fr); gap: 0.5rem; align-items: start; border-bottom: 0.0625rem solid #d5dfe5; padding: 0.75rem 0 1.0625rem; }

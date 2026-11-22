@@ -2,6 +2,10 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.12 - 2026-11-22
+
+- Put the meeting duration beside the public poll title, show the description below, and add space before the verification card.
+
 ## 0.1.11 - 2026-11-22
 
 - Name tentative calendar meetings `[Placeholder] Meeting Name`, including their cancellation updates. Confirmed meetings use the normal name.

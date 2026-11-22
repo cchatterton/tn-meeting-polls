@@ -365,9 +365,11 @@ function tnmp_render_vote_page($poll, $attendee, $message = '') {
         }
         $durations = array_values(array_unique($durations));
         sort($durations);
-        echo '<header class="tnmp-vote-header"><h1>' . esc_html($poll->title) . '</h1></header>';
-        if ($poll->description !== '') { echo '<p>' . nl2br(esc_html($poll->description)) . '</p>'; }
-        if ($durations) { echo '<p class="tnmp-vote-duration">Meeting duration' . (count($durations) > 1 ? 's' : '') . ': ' . esc_html(implode(', ', $durations)) . ' minutes</p>'; }
+        echo '<header class="tnmp-vote-header"><h1>' . esc_html($poll->title);
+        if ($durations) { echo ' <span class="tnmp-title-duration">(' . esc_html(implode(', ', $durations)) . ' mins)</span>'; }
+        echo '</h1>';
+        if ($poll->description !== '') { echo '<p class="tnmp-vote-description">' . nl2br(esc_html($poll->description)) . '</p>'; }
+        echo '</header>';
         $voter_meta = '<p class="tnmp-muted tnmp-voter-meta">Voting as ' . esc_html($attendee->email) . ' · Times shown in ' . esc_html($poll->timezone) . '</p>';
         if ($verified || $poll->status !== 'open') { echo $voter_meta; }
         if ($message !== '') { echo '<div class="tnmp-notice" role="status">' . esc_html($message) . '</div>'; }
