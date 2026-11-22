@@ -217,7 +217,7 @@ function tnmp_render_contacts() {
         wp_nonce_field('tnmp_contact');
         tnmp_return_field();
         echo '<button type="submit" class="button">Save</button></form>';
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" data-confirm="Remove this attendee from your contacts? Existing polls will be unchanged."><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="delete"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="tnmp_contact"><input type="hidden" name="operation" value="delete"><input type="hidden" name="contact_id" value="' . (int) $contact->id . '">';
         wp_nonce_field('tnmp_contact');
         tnmp_return_field();
         echo '<button type="submit" class="button tnmp-remove-contact">Remove</button></form></div></td></tr>';
@@ -305,7 +305,7 @@ function tnmp_render_poll_card($poll) {
     echo '</p>';
     if ($mail_error) { echo '<p class="tnmp-notice" role="status">Calendar or invitation delivery issue: ' . esc_html($mail_error) . '</p>'; }
     if ($failed) {
-        tnmp_action_form($poll->id, 0, 'retry', 'Retry failed emails', 'Retry failed email messages for this poll?');
+        tnmp_action_form($poll->id, 0, 'retry', 'Retry failed emails');
     }
     echo '<div class="tnmp-scroll"><table class="tnmp-table"><thead><tr><th>Proposed time</th><th>Prefer</th><th>Yes</th><th>No</th><th>No vote</th><th>Action</th></tr></thead><tbody>';
     foreach ($slots as $slot) {
@@ -318,8 +318,8 @@ function tnmp_render_poll_card($poll) {
         if ((int) $poll->final_slot_id === (int) $slot->id) { echo '<br><span class="tnmp-final">Selected</span>'; }
         echo '</td><td>' . (int) ($counts[$slot->id]['prefer'] ?? 0) . '</td><td>' . (int) ($counts[$slot->id]['yes'] ?? 0) . '</td><td>' . (int) ($counts[$slot->id]['no'] ?? 0) . '</td><td>' . $no_vote . '</td><td>';
         if ($poll->status === 'open' && $slot->status === 'open') {
-            tnmp_action_form($poll->id, $slot->id, 'finalize', 'Choose final time', 'Send the final invitation to everyone who has not voted No for this time? Other placeholders will be cancelled.');
-            tnmp_action_form($poll->id, $slot->id, 'close', 'Close time', 'Close this time and cancel its placeholders for all attendees?');
+            tnmp_action_form($poll->id, $slot->id, 'finalize', 'Choose final time');
+            tnmp_action_form($poll->id, $slot->id, 'close', 'Close time');
         }
         echo '</td></tr>';
     }
@@ -333,7 +333,7 @@ function tnmp_render_poll_card($poll) {
         echo '<tr><th scope="row">' . esc_html($attendee->name ?: $attendee->email) . '<br><span class="tnmp-muted">' . esc_html($attendee->email) . ($attendee->holds ? ' · placeholders' : '') . ' · invitation ' . esc_html($attendee->invite_state) . '</span>';
         if ($poll->status === 'open' && $attendee->invite_state !== 'queued') {
             echo '<br>';
-            tnmp_action_form($poll->id, 0, 'resend', 'Resend voting link', 'Send a new voting link to this attendee? The old link will stop working.', $attendee->id);
+            tnmp_action_form($poll->id, 0, 'resend', 'Resend voting link', $attendee->id);
         }
         echo '</th>';
         foreach ($slots as $slot) {
@@ -343,13 +343,15 @@ function tnmp_render_poll_card($poll) {
     }
     echo '</tbody></table></div></details>';
     if ($poll->status === 'open') {
-        tnmp_action_form($poll->id, 0, 'cancel', 'Cancel poll', 'Cancel this poll and all outstanding calendar placeholders?');
+        echo '<div class="tnmp-cancel-row">';
+        tnmp_action_form($poll->id, 0, 'cancel', 'Cancel poll');
+        echo '</div>';
     }
     echo '</section>';
 }
 
-function tnmp_action_form($poll_id, $slot_id, $action, $label, $confirm, $attendee_id = 0) {
-    echo '<form class="tnmp-inline" method="post" action="' . esc_url(admin_url('admin-post.php')) . '" data-confirm="' . esc_attr($confirm) . '">';
+function tnmp_action_form($poll_id, $slot_id, $action, $label, $attendee_id = 0) {
+    echo '<form class="tnmp-inline" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
     echo '<input type="hidden" name="action" value="tnmp_manage"><input type="hidden" name="tnmp_action" value="' . esc_attr($action) . '"><input type="hidden" name="poll_id" value="' . (int) $poll_id . '"><input type="hidden" name="slot_id" value="' . (int) $slot_id . '"><input type="hidden" name="attendee_id" value="' . (int) $attendee_id . '">';
     wp_nonce_field('tnmp_manage');
     tnmp_return_field();

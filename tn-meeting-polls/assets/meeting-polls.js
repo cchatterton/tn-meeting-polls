@@ -1,12 +1,4 @@
 (function () {
-  function bindConfirm(root) {
-    root.querySelectorAll('form[data-confirm]').forEach(function (form) {
-      form.addEventListener('submit', function (event) {
-        if (!window.confirm(form.dataset.confirm)) event.preventDefault();
-      });
-    });
-  }
-
   function addAttendeeRow(container) {
     if (!container || container.children.length >= 50) return null;
     var row = container.lastElementChild.cloneNode(true);
@@ -176,7 +168,6 @@
     updateSlotButtons();
   }
 
-  bindConfirm(document);
   var results = document.getElementById('tnmp-results');
   var refreshStatus = document.getElementById('tnmp-refresh-status');
   if (results && typeof tnmpData !== 'undefined') {
@@ -195,7 +186,6 @@
             var card = results.querySelector('[data-poll-id="' + id + '"]');
             if (card) card.querySelector('details').open = true;
           });
-          bindConfirm(results);
           if (refreshStatus && refreshStatus.textContent) refreshStatus.textContent = 'Live updates resumed.';
         }).catch(function () {
           if (refreshStatus && refreshStatus.textContent !== 'Live updates paused. Refresh this page to retry.') {

@@ -2,6 +2,11 @@
 
 All notable changes to TN Meeting Polls are recorded here.
 
+## 0.1.15 - 2026-11-22
+
+- Submit poll actions and contact removal directly without browser confirmation dialogs.
+- Move Cancel poll to the right with space below Individual votes.
+
 ## 0.1.14 - 2026-11-22
 
 - Select saved attendees from the contact table and open Create a poll with those people already added.
